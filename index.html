@@ -183,12 +183,15 @@
     padding-bottom:177.7%;
     background:#0E0E1F;
   }
-  .phone-screen svg{
+  .phone-screen svg,
+  .phone-screen video{
     position:absolute;
     inset:0;
     width:100%;
     height:100%;
     display:block;
+    object-fit:cover;
+    background:#0E0E1F;
   }
   .play-btn{
     position:absolute;
@@ -642,15 +645,15 @@
       <div class="plano-card plano-entrada">
         <div class="ribbon">MAIS ESCOLHIDO</div>
         <p class="plano-nome">ENTRADA</p>
-        <p class="plano-preco">R$ 297,90–397,90<span style="font-size:14px;font-weight:600;color:var(--ink-soft);">/mês</span></p>
-        <p class="plano-desc">4 vídeos por mês. Ótimo ponto de partida pra manter as redes ativas sem parar.</p>
+        <p class="plano-preco">R$ 299,90<span style="font-size:14px;font-weight:600;color:var(--ink-soft);">/mês</span></p>
+        <p class="plano-desc">2 vídeos por mês. Ótimo ponto de partida pra manter as redes ativas sem parar.</p>
         <a href="https://wa.me/5513988609662?text=Oi!%20Quero%20fechar%20o%20pacote%20Entrada%20da%20MKT%20Geo%20Solutions" class="fechar-btn">Fechar esse pacote</a>
       </div>
 
       <div class="plano-card plano-padrao">
         <p class="plano-nome">PADRÃO</p>
-        <p class="plano-preco">R$ 697,90–797,90<span style="font-size:14px;font-weight:600;color:var(--ink-soft);">/mês</span></p>
-        <p class="plano-desc">8 vídeos por mês. Presença forte e constante nas redes.</p>
+        <p class="plano-preco">R$ 499,90<span style="font-size:14px;font-weight:600;color:var(--ink-soft);">/mês</span></p>
+        <p class="plano-desc">4 vídeos por mês. Presença forte e constante nas redes.</p>
         <a href="https://wa.me/5513988609662?text=Oi!%20Quero%20fechar%20o%20pacote%20Padr%C3%A3o%20da%20MKT%20Geo%20Solutions" class="fechar-btn-outline">Fechar esse pacote</a>
       </div>
 
@@ -828,6 +831,26 @@
     var v = document.querySelector('#fullviewScreen video');
     if(v){ v.pause(); }
   }
+
+  // Force-play the preview videos in the vitrine so they show motion
+  // immediately, without waiting for a tap (extra reliability on top
+  // of the autoplay/muted/loop attributes already on each <video>).
+  (function(){
+    var vids = document.querySelectorAll('.vitrine-scroll video');
+    vids.forEach(function(v){
+      v.muted = true;
+      var tryPlay = function(){ v.play().catch(function(){}); };
+      if(v.readyState >= 2){ tryPlay(); }
+      v.addEventListener('loadeddata', tryPlay);
+      v.addEventListener('canplay', tryPlay);
+    });
+    // Some mobile browsers only allow playback after the first touch
+    // anywhere on the page — this catches that case as a fallback.
+    document.addEventListener('touchstart', function once(){
+      vids.forEach(function(v){ v.play().catch(function(){}); });
+      document.removeEventListener('touchstart', once);
+    }, { once: true });
+  })();
 
   // Register the service worker so the app keeps working offline
   // after the first visit (needs internet only that first time).
