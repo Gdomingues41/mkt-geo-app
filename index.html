@@ -372,12 +372,10 @@
   }
   .plano-card{
     border-radius:16px;
-    padding:26px 22px;
+    padding:24px 20px;
     margin-bottom:16px;
     background:var(--panel);
-  }
-  .plano-padrao{
-    box-shadow:0 0 0 1.5px rgba(47,155,255,0.55), 0 20px 40px -20px rgba(47,155,255,0.4);
+    position:relative;
   }
   .plano-nome{
     font-size:12.5px;
@@ -387,7 +385,7 @@
     margin:0 0 6px;
   }
   .plano-preco{
-    font-size:30px;
+    font-size:28px;
     font-weight:800;
     margin:0 0 10px;
     color:#fff;
@@ -396,30 +394,59 @@
     font-size:14px;
     line-height:1.55;
     color:var(--ink-soft);
-    margin:0 0 20px;
+    margin:0 0 18px;
   }
-  .reveal-btn{
-    background:transparent;
-    border:1.5px solid rgba(47,155,255,0.5);
-    color:#fff;
-    font-family:inherit;
-    font-size:14.5px;
-    font-weight:700;
-    padding:13px 18px;
-    border-radius:9px;
+  .reveal-btn-standalone{
+    display:block;
     width:100%;
+    background:linear-gradient(90deg,var(--blue),var(--purple) 55%,var(--red));
+    color:#fff;
+    border:none;
+    font-family:inherit;
+    font-size:15.5px;
+    font-weight:700;
+    padding:16px 18px;
+    border-radius:10px;
     cursor:pointer;
+    box-shadow:0 8px 28px -6px rgba(138,63,252,0.5);
   }
-  #entradaWrap{
+  #planosWrap{
     max-height:0;
     overflow:hidden;
-    transition:max-height .35s ease;
+    transition:max-height .45s ease;
   }
-  #entradaWrap.open{max-height:420px;}
+  #planosWrap.open{max-height:1100px;}
+  .planos-stack{padding-top:20px;}
+  .plano-avulso{
+    box-shadow:0 0 0 1px rgba(237,237,245,0.12);
+  }
+  .plano-avulso .plano-nome{color:var(--ink-soft);}
+  .plano-padrao{
+    box-shadow:0 0 0 1.5px rgba(47,155,255,0.55), 0 20px 40px -20px rgba(47,155,255,0.4);
+  }
   .plano-entrada{
-    box-shadow:0 0 0 1.5px rgba(255,106,61,0.55), 0 20px 40px -20px rgba(255,59,92,0.4);
+    margin-top:6px;
+    margin-bottom:22px;
+    padding:30px 22px 26px;
+    box-shadow:0 0 0 2px var(--orange), 0 20px 48px -18px rgba(255,59,92,0.55);
   }
   .plano-entrada .plano-nome{color:var(--orange);}
+  .plano-entrada .plano-preco{font-size:32px;}
+  .ribbon{
+    position:absolute;
+    top:-12px;
+    left:50%;
+    transform:translateX(-50%);
+    background:linear-gradient(90deg,var(--orange),var(--red));
+    color:#fff;
+    font-size:11px;
+    font-weight:800;
+    letter-spacing:0.03em;
+    padding:5px 14px;
+    border-radius:20px;
+    white-space:nowrap;
+    box-shadow:0 4px 14px -2px rgba(255,59,92,0.6);
+  }
   .fechar-btn{
     font-family:inherit;
     font-size:15px;
@@ -434,13 +461,36 @@
     color:#fff;
     background:linear-gradient(90deg,var(--orange),var(--red));
   }
-  .avulso-link{
+  .fechar-btn-outline{
+    font-family:inherit;
+    font-size:14.5px;
+    font-weight:700;
+    padding:13px 18px;
+    border-radius:9px;
+    width:100%;
+    cursor:pointer;
     text-align:center;
-    font-size:13px;
-    color:var(--ink-soft);
-    margin-top:6px;
+    display:block;
+    text-decoration:none;
+    color:#fff;
+    background:transparent;
+    border:1.5px solid rgba(47,155,255,0.55);
   }
-  .avulso-link b{color:var(--ink);}
+  .fechar-btn-ghost{
+    font-family:inherit;
+    font-size:14px;
+    font-weight:700;
+    padding:12px 18px;
+    border-radius:9px;
+    width:100%;
+    cursor:pointer;
+    text-align:center;
+    display:block;
+    text-decoration:none;
+    color:var(--ink-soft);
+    background:transparent;
+    border:1.5px solid rgba(237,237,245,0.18);
+  }
 
   /* ---------- CTA FINAL ---------- */
   .final{
@@ -575,25 +625,37 @@
 
 <section class="planos">
   <h2>Planos</h2>
-  <p class="sub">Baseado no que conversamos, esse é o plano que mais entrega resultado:</p>
+  <p class="sub">Baseado no que conversamos, montei a comparação certa pro seu negócio:</p>
 
-  <div class="plano-card plano-padrao">
-    <p class="plano-nome">PACOTE PADRÃO</p>
-    <p class="plano-preco">R$ 797–897<span style="font-size:14px;font-weight:600;color:var(--ink-soft);">/mês</span></p>
-    <p class="plano-desc">8 vídeos por mês. Presença forte e constante nas redes.</p>
-    <button class="reveal-btn" onclick="document.getElementById('entradaWrap').classList.toggle('open')">Ver opção mais em conta</button>
-  </div>
+  <button class="reveal-btn-standalone" onclick="document.getElementById('planosWrap').classList.toggle('open')">Ver as opções</button>
 
-  <div id="entradaWrap">
-    <div class="plano-card plano-entrada">
-      <p class="plano-nome">PACOTE ENTRADA</p>
-      <p class="plano-preco">R$ 397–497<span style="font-size:14px;font-weight:600;color:var(--ink-soft);">/mês</span></p>
-      <p class="plano-desc">4 vídeos por mês. Ótimo ponto de partida pra manter as redes ativas sem parar.</p>
-      <a href="https://wa.me/5513988609662?text=Oi!%20Quero%20fechar%20o%20pacote%20Entrada%20da%20MKT%20Geo%20Solutions" class="fechar-btn">Fechar esse pacote</a>
+  <div id="planosWrap">
+    <div class="planos-stack">
+
+      <div class="plano-card plano-avulso">
+        <p class="plano-nome">AVULSO</p>
+        <p class="plano-preco">R$ 167</p>
+        <p class="plano-desc">1 vídeo, sem compromisso mensal. Ideal pra testar o formato.</p>
+        <a href="https://wa.me/5513988609662?text=Oi!%20Quero%20fazer%20o%20v%C3%ADdeo%20Avulso%20da%20MKT%20Geo%20Solutions" class="fechar-btn-ghost">Fechar esse pacote</a>
+      </div>
+
+      <div class="plano-card plano-entrada">
+        <div class="ribbon">MAIS ESCOLHIDO</div>
+        <p class="plano-nome">ENTRADA</p>
+        <p class="plano-preco">R$ 397–497<span style="font-size:14px;font-weight:600;color:var(--ink-soft);">/mês</span></p>
+        <p class="plano-desc">4 vídeos por mês. Ótimo ponto de partida pra manter as redes ativas sem parar.</p>
+        <a href="https://wa.me/5513988609662?text=Oi!%20Quero%20fechar%20o%20pacote%20Entrada%20da%20MKT%20Geo%20Solutions" class="fechar-btn">Fechar esse pacote</a>
+      </div>
+
+      <div class="plano-card plano-padrao">
+        <p class="plano-nome">PADRÃO</p>
+        <p class="plano-preco">R$ 697–797<span style="font-size:14px;font-weight:600;color:var(--ink-soft);">/mês</span></p>
+        <p class="plano-desc">8 vídeos por mês. Presença forte e constante nas redes.</p>
+        <a href="https://wa.me/5513988609662?text=Oi!%20Quero%20fechar%20o%20pacote%20Padr%C3%A3o%20da%20MKT%20Geo%20Solutions" class="fechar-btn-outline">Fechar esse pacote</a>
+      </div>
+
     </div>
   </div>
-
-  <p class="avulso-link">Prefere testar antes? Tem o <b>Avulso, 1 vídeo por R$ 147</b>, sem compromisso mensal.</p>
 </section>
 
 <div class="final">
