@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Meus leads · MKT Geo</title>
+<style>
+  :root{--bg:#07070F;--panel:#0E0E1F;--ink:#EDEDF5;--soft:#9C9CBE;--blue:#2F9BFF;--purple:#8A3FFC;--line:rgba(138,63,252,.28);}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:20px 16px 40px;max-width:560px;margin-inline:auto;}
+  h1{font-size:20px;margin:0 0 4px;}
+  .sub{color:var(--soft);font-size:13px;margin:0 0 18px;}
+  button.rf{font:inherit;font-weight:700;color:#fff;background:linear-gradient(90deg,var(--blue),var(--purple));border:none;border-radius:9px;padding:11px 16px;margin-bottom:16px;cursor:pointer;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:12px;}
+  .nome{font-weight:800;font-size:16px;margin:0 0 2px;}
+  .meta{color:var(--soft);font-size:12.5px;margin:0 0 10px;}
+  .acoes{display:flex;gap:8px;flex-wrap:wrap;}
+  .acoes a{font-size:13.5px;font-weight:700;text-decoration:none;color:#fff;border:1.5px solid rgba(47,155,255,.55);border-radius:8px;padding:9px 14px;}
+  .acoes a.w{background:#1FAF5A;border-color:#1FAF5A;}
+  .msg{color:var(--soft);font-size:14px;line-height:1.5;}
+</style>
+</head>
+<body>
+<h1>Meus leads</h1>
+<p class="sub" id="sub">Carregando…</p>
+<button class="rf" onclick="carregar()">Atualizar</button>
+<div id="lista"></div>
+<script src="firebase-config.js"></script>
+<script>
+  function el(t,c,txt){var e=document.createElement(t);if(c)e.className=c;if(txt!=null)e.textContent=txt;return e;}
+  function carregar(){
+    var c=window.MKT_FIREBASE, lista=document.getElementById('lista'), sub=document.getElementById('sub');
+    lista.textContent='';
+    if(!c||!c.apiKey||!c.projectId){sub.textContent='Firebase ainda não configurado.';return;}
+    sub.textContent='Carregando…';
+    var url='https://firestore.googleapis.com/v1/projects/'+encodeURIComponent(c.projectId)+
+      '/databases/(default)/documents/leads?pageSize=300&orderBy=criadoEm%20desc&key='+encodeURIComponent(c.apiKey);
+    fetch(url).then(function(r){if(!r.ok)throw new Error('http '+r.status);return r.json();}).then(function(j){
+      var docs=j.documents||[];
+      sub.textContent=docs.length+(docs.length===1?' contato':' contatos');
+      if(!docs.length){lista.appendChild(el('p','msg','Nenhum contato registrado ainda.'));return;}
+      docs.forEach(function(d){
+        var f=d.fields||{}, g=function(k){return f[k]&&f[k].stringValue||'';};
+        var card=el('div','card');
+        card.appendChild(el('p','nome',g('nome')));
+        var data=f.criadoEm&&f.criadoEm.timestampValue?new Date(f.criadoEm.timestampValue).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+        card.appendChild(el('p','meta',[g('plano'),data,g('email')].filter(Boolean).join(' · ')));
+        var dig=g('telefone').replace(/\D/g,''); if(dig.length<=11)dig='55'+dig;
+        var ac=el('div','acoes');
+        var w=el('a','w','WhatsApp');w.href='https://wa.me/'+dig+'?text='+encodeURIComponent('Oi '+g('nome').split(' ')[0]+'! Aqui é da MKT Geo Solutions, tudo bem? Passando pra saber se ficou alguma dúvida sobre a proposta.');w.target='_blank';w.rel='noopener';
+        var l=el('a',null,'Ligar');l.href='tel:+'+dig;
+        ac.appendChild(w);ac.appendChild(l);card.appendChild(ac);lista.appendChild(card);
+      });
+    }).catch(function(e){sub.textContent='Não consegui carregar ('+e.message+'). Confira a internet e as regras do Firestore.';});
+  }
+  carregar();
+</script>
+</body>
+</html>

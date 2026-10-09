@@ -1,10 +1,12 @@
 // Bump this version string whenever you update any file in the app,
 // so devices that already installed it pick up the new version.
-const CACHE_NAME = 'mktgeo-v2';
+const CACHE_NAME = 'mktgeo-v5';
 
 const ASSETS = [
   './',
   './index.html',
+  './leads.html',
+  './firebase-config.js',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -35,6 +37,8 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Pedidos a outros domínios (Firestore, links de pagamento) vão direto pra rede.
+  if (new URL(event.request.url).origin !== self.location.origin) return;
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
