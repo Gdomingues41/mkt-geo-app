@@ -23,6 +23,14 @@
   .msg{color:var(--soft);font-size:14px;line-height:1.5;}
   .msg.erro{color:var(--red);}
   [hidden]{display:none !important;}
+  .filtros{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+  button.chip{background:transparent;border:1.5px solid rgba(237,237,245,.2);color:var(--soft);padding:8px 12px;font-size:13px;border-radius:20px;}
+  button.chip.on{background:linear-gradient(90deg,var(--blue),var(--purple));border-color:transparent;color:#fff;}
+  .st{display:flex;gap:6px;margin:0 0 12px;}
+  .st button{flex:1;background:transparent;border:1.5px solid rgba(237,237,245,.18);color:var(--soft);padding:9px 6px;font-size:13px;border-radius:8px;}
+  .st button.on.novo{background:#2F9BFF;border-color:#2F9BFF;color:#fff;}
+  .st button.on.chamei{background:#E8A317;border-color:#E8A317;color:#1a1200;}
+  .st button.on.fechou{background:#1FAF5A;border-color:#1FAF5A;color:#fff;}
 </style>
 </head>
 <body>
@@ -39,6 +47,8 @@
     <button id="btnAtualizar">Atualizar</button>
     <button id="btnSair" class="sec">Sair</button>
   </div>
+  <div class="filtros" id="filtros"></div>
+  <p class="msg erro" id="aviso" hidden></p>
   <div id="lista"></div>
 </div>
 
@@ -46,11 +56,14 @@
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
   import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-  import { getFirestore, collection, query, orderBy, limit, getDocs } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+  import { getFirestore, collection, query, orderBy, limit, getDocs, doc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 
   const $ = (id) => document.getElementById(id);
-  const sub = $('sub'), lista = $('lista'), telaLogin = $('telaLogin'), telaLista = $('telaLista');
+  const sub = $('sub'), lista = $('lista'), telaLogin = $('telaLogin'), telaLista = $('telaLista'), filtrosEl = $('filtros'), aviso = $('aviso');
   function el(t, c, txt){ const e = document.createElement(t); if(c) e.className = c; if(txt != null) e.textContent = txt; return e; }
+
+  const STATUS = [['novo', 'Novo'], ['chamei', 'Já chamei'], ['fechou', 'Fechou']];
+  let todos = [], filtro = 'todos', db = null;
 
   const c = window.MKT_FIREBASE;
   if(!c || !c.apiKey || !c.projectId){
@@ -58,7 +71,7 @@
   } else {
     const app = initializeApp({ apiKey: c.apiKey, authDomain: c.projectId + '.firebaseapp.com', projectId: c.projectId });
     const auth = getAuth(app);
-    const db = getFirestore(app);
+    db = getFirestore(app);
 
     $('btnEntrar').addEventListener('click', async () => {
       try { await signInWithPopup(auth, new GoogleAuthProvider()); }
@@ -73,41 +86,79 @@
 
     onAuthStateChanged(auth, (user) => {
       if(user){ telaLogin.hidden = true; telaLista.hidden = false; carregar(); }
-      else { telaLista.hidden = true; telaLogin.hidden = false; lista.textContent = ''; sub.textContent = 'Faça login para ver os contatos.'; }
+      else { telaLista.hidden = true; telaLogin.hidden = false; todos = []; lista.textContent = ''; sub.textContent = 'Faça login para ver os contatos.'; }
     });
+  }
 
-    async function carregar(){
-      lista.textContent = '';
-      sub.textContent = 'Carregando…';
-      try {
-        const snap = await getDocs(query(collection(db, 'leads'), orderBy('criadoEm', 'desc'), limit(300)));
-        const docs = snap.docs;
-        sub.textContent = docs.length + (docs.length === 1 ? ' contato' : ' contatos');
-        if(!docs.length){ lista.appendChild(el('p', 'msg', 'Nenhum contato registrado ainda.')); return; }
-        docs.forEach((d) => {
-          const f = d.data();
-          const card = el('div', 'card');
-          card.appendChild(el('p', 'nome', f.nome || ''));
-          const quando = f.criadoEm && f.criadoEm.toDate
-            ? f.criadoEm.toDate().toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
-          card.appendChild(el('p', 'meta', [f.plano, quando, f.email].filter(Boolean).join(' · ')));
-          let dig = String(f.telefone || '').replace(/\D/g, '');
-          if(dig.length <= 11) dig = '55' + dig;
-          const ac = el('div', 'acoes');
-          const w = el('a', 'w', 'WhatsApp');
-          const primeiro = String(f.nome || '').split(' ')[0];
-          w.href = 'https://wa.me/' + dig + '?text=' + encodeURIComponent('Oi ' + primeiro + '! Aqui é da MKT Geo Solutions, tudo bem? Passando pra saber se ficou alguma dúvida sobre a proposta.');
-          w.target = '_blank'; w.rel = 'noopener';
-          const l = el('a', null, 'Ligar'); l.href = 'tel:+' + dig;
-          ac.appendChild(w); ac.appendChild(l); card.appendChild(ac); lista.appendChild(card);
-        });
-      } catch(e){
-        if(e && e.code === 'permission-denied'){
-          sub.textContent = 'Esta conta não tem permissão para ver os contatos. Saia e entre com a conta autorizada.';
-        } else {
-          sub.textContent = 'Não consegui carregar (' + ((e && e.code) || 'erro') + '). Confira a internet.';
-        }
+  function mostrarAviso(txt){ aviso.textContent = txt || ''; aviso.hidden = !txt; }
+
+  async function carregar(){
+    lista.textContent = ''; filtrosEl.textContent = ''; mostrarAviso('');
+    sub.textContent = 'Carregando…';
+    try {
+      const snap = await getDocs(query(collection(db, 'leads'), orderBy('criadoEm', 'desc'), limit(300)));
+      todos = snap.docs.map((d) => {
+        const f = d.data();
+        const st = STATUS.some((s) => s[0] === f.status) ? f.status : 'novo';
+        return {
+          id: d.id, nome: f.nome || '', telefone: f.telefone || '', email: f.email || '', plano: f.plano || '', status: st,
+          quando: f.criadoEm && f.criadoEm.toDate
+            ? f.criadoEm.toDate().toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : ''
+        };
+      });
+      render();
+    } catch(e){
+      if(e && e.code === 'permission-denied'){
+        sub.textContent = 'Esta conta não tem permissão para ver os contatos. Saia e entre com a conta autorizada.';
+      } else {
+        sub.textContent = 'Não consegui carregar (' + ((e && e.code) || 'erro') + '). Confira a internet.';
       }
+    }
+  }
+
+  function render(){
+    lista.textContent = ''; filtrosEl.textContent = '';
+    [['todos', 'Todos']].concat(STATUS).forEach((par) => {
+      const k = par[0], rot = par[1];
+      const n = k === 'todos' ? todos.length : todos.filter((x) => x.status === k).length;
+      const b = el('button', 'chip' + (filtro === k ? ' on' : ''), rot + ' (' + n + ')');
+      b.addEventListener('click', () => { filtro = k; render(); });
+      filtrosEl.appendChild(b);
+    });
+    const vis = todos.filter((x) => filtro === 'todos' || x.status === filtro);
+    sub.textContent = todos.length + (todos.length === 1 ? ' contato' : ' contatos');
+    if(!vis.length){ lista.appendChild(el('p', 'msg', todos.length ? 'Nenhum contato neste filtro.' : 'Nenhum contato registrado ainda.')); return; }
+    vis.forEach((item) => {
+      const card = el('div', 'card');
+      card.appendChild(el('p', 'nome', item.nome));
+      card.appendChild(el('p', 'meta', [item.plano, item.quando, item.email].filter(Boolean).join(' · ')));
+      const st = el('div', 'st');
+      STATUS.forEach((s) => {
+        const b = el('button', s[0] + (item.status === s[0] ? ' on' : ''), s[1]);
+        b.addEventListener('click', () => mudarStatus(item, s[0]));
+        st.appendChild(b);
+      });
+      card.appendChild(st);
+      let dig = String(item.telefone).replace(/\D/g, '');
+      if(dig.length <= 11) dig = '55' + dig;
+      const ac = el('div', 'acoes');
+      const w = el('a', 'w', 'WhatsApp');
+      const primeiro = String(item.nome).split(' ')[0];
+      w.href = 'https://wa.me/' + dig + '?text=' + encodeURIComponent('Oi ' + primeiro + '! Aqui é da MKT Geo Solutions, tudo bem? Passando pra saber se ficou alguma dúvida sobre a proposta.');
+      w.target = '_blank'; w.rel = 'noopener';
+      const l = el('a', null, 'Ligar'); l.href = 'tel:+' + dig;
+      ac.appendChild(w); ac.appendChild(l); card.appendChild(ac); lista.appendChild(card);
+    });
+  }
+
+  async function mudarStatus(item, novo){
+    if(item.status === novo) return;
+    const antigo = item.status;
+    item.status = novo; mostrarAviso(''); render();
+    try { await updateDoc(doc(db, 'leads', item.id), { status: novo }); }
+    catch(e){
+      item.status = antigo; render();
+      mostrarAviso('Não consegui salvar o status (' + ((e && e.code) || 'erro') + '). Confira a internet e tente de novo.');
     }
   }
 </script>
