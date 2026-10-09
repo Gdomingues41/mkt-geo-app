@@ -1,6 +1,6 @@
 // Bump this version string whenever you update any file in the app,
 // so devices that already installed it pick up the new version.
-const CACHE_NAME = 'mktgeo-v7';
+const CACHE_NAME = 'mktgeo-v8';
 
 const ASSETS = [
   './',

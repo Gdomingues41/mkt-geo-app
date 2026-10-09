@@ -602,6 +602,22 @@
   .form-msg{font-size:13px;margin:12px 0 0;min-height:18px;text-align:center;color:var(--ink-soft);}
   .form-msg.ok{color:#5CE08A;}
   .form-msg.erro{color:var(--red);}
+
+  /* ---------- BLOCO SEM RISCO / GARANTIA ---------- */
+  .valor-box{
+    margin:20px 0 18px;padding:18px 18px 8px;
+    background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    box-shadow:0 0 30px -12px var(--glow-purple);
+  }
+  .valor-titulo{font-size:12px;font-weight:800;letter-spacing:.08em;color:var(--blue);margin:0 0 12px;text-transform:uppercase;}
+  .valor-lista{list-style:none;margin:0;padding:0;}
+  .valor-lista li{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;line-height:1.45;margin:0 0 12px;color:var(--ink);}
+  .valor-lista .ok{
+    flex:0 0 22px;height:22px;border-radius:50%;
+    background:linear-gradient(90deg,var(--blue),var(--purple));
+    color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:1px;
+  }
+  .sheet-garantia{font-size:13px;line-height:1.45;color:var(--ink-soft);margin:-8px 0 14px;}
 </style>
 </head>
 <body>
@@ -712,6 +728,15 @@
   <h2>Planos</h2>
   <p class="sub">Baseado no que conversamos, montei a comparação certa pro seu negócio:</p>
 
+  <div class="valor-box">
+    <p class="valor-titulo">Seu investimento, sem risco</p>
+    <ul class="valor-lista">
+      <li><span class="ok">✓</span><span>Vídeos profissionais com apresentador de IA, feitos pro seu negócio e prontos pra postar.</span></li>
+      <li><span class="ok">✓</span><span>Não gostou do vídeo? A gente refaz sem cobrar de novo, até você aprovar.</span></li>
+      <li><span class="ok">✓</span><span>Nos planos mensais, você cancela quando quiser: sem multa e sem fidelidade.</span></li>
+    </ul>
+  </div>
+
   <button class="reveal-btn-standalone" onclick="document.getElementById('planosWrap').classList.toggle('open')">Ver as opções</button>
 
   <div id="planosWrap">
@@ -754,6 +779,7 @@
     <button class="sheet-close" onclick="closeFechar()" aria-label="Fechar">✕</button>
     <p class="sheet-plano" id="shPlano"></p>
     <p class="sheet-valor" id="shValor"></p>
+    <p class="sheet-garantia" id="shGarantia"></p>
 
     <button class="fechar-btn btn-pix" id="btnPix" onclick="togglePix('principal')">Pagar com Pix</button>
     <div class="pix-box" id="pixBox">
@@ -3320,6 +3346,7 @@ function openFechar(id){
   var p = PLANOS[id];
   document.getElementById('shPlano').textContent = 'PACOTE ' + p.nome;
   document.getElementById('shValor').innerHTML = p.rotulo + (p.mensal ? ' <small>/mês</small>' : '');
+  document.getElementById('shGarantia').textContent = 'Não gostou do vídeo? Refazemos sem cobrar de novo, até você aprovar.' + (p.mensal ? ' Cancele quando quiser, sem multa.' : '');
   document.getElementById('btnCartao').href = p.cartao;
   document.getElementById('btnWpp').href = 'https://wa.me/' + WPP_NUM + '?text=' + encodeURIComponent(p.wpp);
   hidePix(true);
