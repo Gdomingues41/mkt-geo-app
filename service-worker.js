@@ -1,6 +1,6 @@
 // Bump this version string whenever you update any file in the app,
 // so devices that already installed it pick up the new version.
-const CACHE_NAME = 'mktgeo-v8';
+const CACHE_NAME = 'mktgeo-v10';
 
 const ASSETS = [
   './',
@@ -17,7 +17,9 @@ const ASSETS = [
   './videos/salao-beleza.mp4',
   './videos/salao-beleza.jpg',
   './videos/maqtec.mp4',
-  './videos/maqtec.jpg'
+  './videos/maqtec.jpg',
+  './videos/doceria-josi.mp4',
+  './videos/doceria-josi.jpg'
 ];
 
 self.addEventListener('install', (event) => {
