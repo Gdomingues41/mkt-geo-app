@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Radar de Prospecção</title>
+<style>
+*{box-sizing:border-box;margin:0}
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#0d1117;color:#e6edf3;font-size:15px;line-height:1.4}
+header{padding:14px 14px 0;position:sticky;top:0;background:#0d1117;z-index:5;border-bottom:1px solid #21262d}
+h1{font-size:18px;display:flex;gap:8px;align-items:center}
+h1 small{font-weight:400;color:#8b949e;font-size:12px}
+nav{display:flex;gap:4px;margin-top:10px;overflow-x:auto}
+nav button{background:none;border:0;color:#8b949e;padding:9px 12px;font-size:14px;border-bottom:2px solid transparent;white-space:nowrap;cursor:pointer}
+nav button.on{color:#2dd4bf;border-color:#2dd4bf}
+main{padding:14px;max-width:1100px;margin:auto}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input,select,textarea{background:#161b22;border:1px solid #30363d;color:#e6edf3;border-radius:8px;padding:9px 10px;font:inherit;width:100%}
+textarea{min-height:90px;resize:vertical}
+label{font-size:12px;color:#8b949e;display:block;margin:8px 0 3px}
+.btn{background:#21262d;border:1px solid #30363d;color:#e6edf3;border-radius:8px;padding:8px 12px;font:inherit;font-size:13px;cursor:pointer;text-decoration:none;display:inline-block}
+.btn.pri{background:#0f766e;border-color:#0f766e;color:#fff}
+.btn.sm{padding:5px 9px;font-size:12px}
+.btn.red{color:#f87171}
+.card{background:#161b22;border:1px solid #21262d;border-radius:12px;padding:12px;margin-bottom:10px}
+.tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;background:#1f2937;color:#9ca3af;margin-right:4px}
+.tag.p{background:#0f2e2b;color:#5eead4}
+.score{font-weight:700;font-size:18px;color:#2dd4bf;min-width:38px;text-align:right}
+.muted{color:#8b949e;font-size:13px}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:4px 0 10px}
+.chip{border:1px solid #30363d;background:none;color:#8b949e;border-radius:99px;padding:5px 12px;font-size:13px;white-space:nowrap;cursor:pointer}
+.chip.on{background:#0f766e;border-color:#0f766e;color:#fff}
+.board{display:flex;gap:10px;overflow-x:auto;padding-bottom:14px;align-items:flex-start}
+.col{min-width:230px;width:230px;background:#0f141b;border:1px solid #21262d;border-radius:12px;padding:8px}
+.col h3{font-size:13px;color:#8b949e;margin:2px 4px 8px;display:flex;justify-content:space-between}
+.lead{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:9px;margin-bottom:8px}
+.lead b{display:block;margin-bottom:3px}
+.lead .row{margin-top:7px;gap:5px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:12px}
+.stat{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:10px}
+.stat b{font-size:20px;color:#2dd4bf;display:block}
+#modal{position:fixed;inset:0;background:#000a;display:none;align-items:flex-end;justify-content:center;z-index:20}
+#modal.on{display:flex}
+.sheet{background:#0d1117;border:1px solid #30363d;border-radius:16px 16px 0 0;width:100%;max-width:640px;max-height:90vh;overflow:auto;padding:16px}
+.sheet h2{font-size:16px;margin-bottom:6px}
+.msg{margin-top:10px}
+.msg .t{font-size:12px;color:#2dd4bf;margin-bottom:3px}
+.note{background:#1c1917;border:1px solid #44403c;border-radius:10px;padding:10px;font-size:13px;color:#d6d3d1;margin-bottom:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>📡 Radar de Prospecção <small>Gabriel · produtos → nichos → funil</small></h1>
+  <nav id="nav"></nav>
+</header>
+<main id="app"></main>
+<div id="modal"><div class="sheet" id="sheet"></div></div>
+
+<script>
+const PRODUCTS=[
+ {id:'mkt',nome:'MKT Geo Solutions',oferta:'vídeos de anúncio com avatar de IA para pequenos negócios',preco:'Avulso R$149,90 · Entrada R$299,90/mês (2 vídeos) · Padrão R$499,90/mês (4 vídeos)',dor:'não tem tempo nem equipe para produzir vídeo e aparecer nas redes',pergunta:'vocês já usam vídeos nas redes para atrair clientes, ou falta tempo/equipe para produzir?'},
+ {id:'pod',nome:'Pódium CRM',oferta:'CRM em Kanban integrado ao WhatsApp para autoescolas',preco:'sob consulta (validado numa autoescola real)',dor:'leads do WhatsApp se perdem e ninguém acompanha até a matrícula',pergunta:'quando um aluno chama no WhatsApp e não fecha na hora, vocês conseguem acompanhar esse contato até a matrícula?'},
+ {id:'lab',nome:'Labortech',oferta:'sistema de gestão de laboratório (amostras, resultados, laudos digitais)',preco:'Básico R$197/mês · Profissional R$397 · Empresarial R$797',dor:'resultados em planilha/papel, laudos manuais e sem rastreabilidade',pergunta:'como vocês controlam hoje os resultados das análises e emitem os laudos: planilha, papel ou sistema?'},
+ {id:'rc',nome:'RouteCheck',oferta:'PWA de supervisão de campo com GPS, checklist e fotos',preco:'a definir',dor:'não há prova de que o supervisor visitou a loja nem o que encontrou lá',pergunta:'como vocês comprovam hoje que o supervisor visitou cada unidade e o que ele encontrou?'},
+ {id:'sc',nome:'Scanlist Market',oferta:'app de lista de compras com leitor de código de barras',preco:'R$9,90 a R$29,90',dor:'estourar o orçamento no mercado sem comparar preços',pergunta:'você costuma montar a lista e comparar preços antes de ir ao mercado?'}
+];
+// facil / ticket / prox = 1..5  (prox = proximidade: já tenho contato ou conheço a dor)
+const SEED=[
+ {n:'Confeitarias e docerias',p:'mkt',dor:'vendem por Instagram e WhatsApp e o Natal é o pico de encomendas (panetone, caixas, ceias)',f:5,t:2,x:4,camp:'natal',q:['confeitaria','doceria','bolos e doces por encomenda','panetone artesanal','chocotone','brigadeiro gourmet','bolo decorado','doces para festa','cesta e caixa de presente','ceia de natal encomenda'],ig:'doceria bolos encomendas'},
+ {n:'Salões de beleza e barbearias',p:'mkt',dor:'dependem de Instagram e não têm tempo para vídeo',f:5,t:2,x:4},
+ {n:'Joalherias e relojoarias',p:'mkt',dor:'produto visual que vende bem em vídeo curto',f:4,t:3,x:3},
+ {n:'Autopeças e oficinas',p:'mkt',dor:'concorrência forte e pouca presença digital',f:4,t:3,x:3},
+ {n:'Mercados e conveniências',p:'mkt',dor:'promoções diárias que precisam de divulgação',f:4,t:2,x:4},
+ {n:'Clínicas de estética e odontologia',p:'mkt',dor:'ticket alto por paciente, divulgação irregular',f:3,t:4,x:2},
+ {n:'Restaurantes e delivery',p:'mkt',dor:'dependem de iFood e querem vender direto',f:4,t:2,x:2},
+ {n:'Autoescolas',p:'pod',dor:'leads do WhatsApp sem funil de acompanhamento',f:5,t:3,x:5},
+ {n:'Laboratórios de análise de água',p:'lab',dor:'laudos por Portaria 888 em planilha, sem rastreabilidade',f:4,t:4,x:4},
+ {n:'Terminais e usinas de açúcar',p:'lab',dor:'controle ICUMSA e laudos de navio manuais',f:3,t:5,x:5},
+ {n:'Trading e empresas de inspeção',p:'lab',dor:'consolidar laudos de vários laboratórios',f:3,t:4,x:4},
+ {n:'Laboratórios de solo e efluentes',p:'lab',dor:'muitas amostras e emissão de laudo repetitiva',f:3,t:3,x:2},
+ {n:'Redes de lojas e franquias',p:'rc',dor:'supervisão de campo sem comprovação',f:3,t:4,x:3},
+ {n:'Empresas de merchandising/promotores',p:'rc',dor:'precisam provar visita ao cliente final',f:3,t:4,x:2},
+ {n:'Limpeza e segurança patrimonial',p:'rc',dor:'fiscalização de postos em campo',f:3,t:4,x:2},
+ {n:'Criadores de economia doméstica (parceria)',p:'sc',dor:'audiência que quer economizar no mercado',f:2,t:1,x:2}
+];
+const STAGES=['Prospectado','Abordado','Respondeu','Demo / Visita','Proposta','Fechado','Perdido'];
+const KEY='radar_prospeccao_v1';
+let S={city:'Praia Grande',extra:[],leads:[],videos:{},camp:'bf'};
+try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r));}catch(e){}
+const VBASE='https://gdomingues41.github.io/mkt-geo-app/videos/';
+const DEF_VID={'Salões de beleza e barbearias':VBASE+'barbearia.mp4','Joalherias e relojoarias':VBASE+'joalheria.mp4','Autopeças e oficinas':VBASE+'maqtec.mp4','Confeitarias e docerias':VBASE+'doceria-josi.mp4'};
+S.videos=Object.assign({},DEF_VID,S.videos||{});
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+let ui={tab:'nichos',prod:'mkt',busy:'',editing:null,approach:null,ai:null};
+let sample=null;
+try{if(window.claude&&claude.use){claude.use('sample').then(s=>{sample=s;render();}).catch(()=>{});}}catch(e){}
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const prod=id=>PRODUCTS.find(p=>p.id===id)||PRODUCTS[0];
+const score=n=>((3*n.f+2*n.x+2*n.t)/7);
+const allNiches=()=>SEED.concat(S.extra).slice().sort((a,b)=>score(b)-score(a));
+
+function render(){
+  const tabs=[['nichos','🎯 Nichos'],['funil','📋 Funil'],['produtos','📦 Produtos'],['dados','💾 Dados']];
+  $('#nav').innerHTML=tabs.map(t=>`<button class="${ui.tab===t[0]?'on':''}" onclick="ui.tab='${t[0]}';render()">${t[1]}</button>`).join('');
+  $('#app').innerHTML={nichos:vNichos,funil:vFunil,produtos:vProdutos,dados:vDados}[ui.tab]();
+}
+
+function bfDate(y){const d=new Date(y,10,1);const first=(4-d.getDay()+7)%7;return new Date(y,10,1+first+21+1);}
+function camps(){
+  const y=new Date().getFullYear(),t=new Date();t.setHours(0,0,0,0);
+  const bf=bfDate(y),nat=new Date(y,11,25),fmt=d=>d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+  const dl=d=>Math.round((d-t)/864e5);
+  return {bf:{nome:'Black Friday',art:'a',dias:dl(bf),data:fmt(bf)},natal:{nome:'Natal',art:'o',dias:dl(nat),data:fmt(nat)}};
+}
+const AREAS=['Praia Grande','Boqueirão, Praia Grande','Guilhermina, Praia Grande','Ocian, Praia Grande','Tupi, Praia Grande','Vila Mirim, Praia Grande','Aviação, Praia Grande','Santos','São Vicente','Guarujá','Cubatão','Mongaguá','Itanhaém'];
+function updFree(){const v=document.getElementById('qfree').value.trim();document.getElementById('qa').href=v?'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(v+' '+S.city):'#';}
+function waLink(l,t){const d=(l.tel||'').replace(/\D/g,'');if(!d)return '';const num=d.length<=11?'55'+d:d;return 'https://wa.me/'+num+'?text='+encodeURIComponent(t);}
+function markSent(id){const l=S.leads.find(x=>x.id===id);if(l&&l.stage===0){l.stage=1;save();setTimeout(render,600);}}
+const IMP_DEMO='';
+function importLeads(){
+  const nn=document.getElementById('imp_n').value,n=allNiches().find(x=>x.n===nn)||{n:nn,p:'mkt'};
+  const have=new Set(S.leads.map(l=>(l.tel||'').replace(/\D/g,'')).filter(Boolean));
+  let add=0,skip=0;
+  document.getElementById('imp_t').value.split('\n').forEach(line=>{
+    const parts=line.split(/;|\t/).map(x=>x.trim());if(!parts[0])return;
+    const tel=parts[1]||'',dig=tel.replace(/\D/g,'');
+    if(dig&&have.has(dig)){skip++;return;}
+    if(dig)have.add(dig);
+    S.leads.push({id:'l'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),nome:parts[0],tel:tel,nicho:n.n,prod:n.p,stage:0,nota:parts[2]||'',cidade:S.city});add++;
+  });
+  save();ui.impMsg=add+' leads importados'+(skip?' ('+skip+' repetidos ignorados)':'')+'.';render();
+}
+function campKey(l){const n=allNiches().find(x=>x.n===l.nicho)||{};return n.camp||S.camp;}
+function mapsA(t,label){return `<a class="btn sm" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(t+' '+S.city)}">🔎 ${esc(label)}</a>`;}
+function setVid(idx,v){S.videos=S.videos||{};S.videos[allNiches()[idx].n]=v.trim();save();render();}
+function vNichos(){
+  const list=allNiches().filter(n=>ui.prod==='all'||n.p===ui.prod);
+  const cs=camps(),cl=c=>c.dias>0?`${c.dias} dias (${c.data})`:'é agora';
+  return `
+  <div class="card" style="border-color:#0f766e">
+    <b>🎯 Foco: MKT Geo · campanhas de fim de ano</b>
+    <div class="muted" style="margin:4px 0 8px">Black Friday: ${cl(cs.bf)} · Natal: ${cl(cs.natal)}</div>
+    <div class="chips" style="padding-bottom:0">
+      ${[['bf','Black Friday'],['natal','Natal'],['none','Sem campanha']].map(([k,t])=>`<button class="chip ${S.camp===k?'on':''}" onclick="S.camp='${k}';save();render()">${t}</button>`).join('')}
+    </div>
+    <div class="muted">A campanha escolhida entra automática nas mensagens do MKT Geo.</div>
+  </div>
+  <div class="note">Nota = 3×facilidade + 2×proximidade + 2×ticket (de 1 a 5). É uma estimativa inicial: ajuste conforme os resultados reais do funil.</div>
+  <label>Onde buscar (toque para trocar, ou digite qualquer bairro/cidade)</label>
+  <div class="chips">${AREAS.map(a=>`<button class="chip ${S.city===a?'on':''}" onclick="S.city='${a}';save();render()">${a}</button>`).join('')}</div>
+  <input value="${esc(S.city)}" onchange="S.city=this.value;save();render()">
+  <label>Busca livre no Maps (qualquer termo)</label>
+  <div class="row" style="flex-wrap:nowrap"><input id="qfree" placeholder="ex.: bolo no pote, cake design" oninput="updFree()"><a id="qa" class="btn" target="_blank" rel="noopener" href="#" style="white-space:nowrap">🔎 Buscar</a></div>
+  <div class="chips" style="margin-top:10px">
+    <button class="chip ${ui.prod==='all'?'on':''}" onclick="ui.prod='all';render()">Todos</button>
+    ${PRODUCTS.map(p=>`<button class="chip ${ui.prod===p.id?'on':''}" onclick="ui.prod='${p.id}';render()">${esc(p.nome)}</button>`).join('')}
+  </div>
+  <div class="row" style="margin-bottom:12px">
+    ${sample?`<button class="btn pri" ${ui.busy?'disabled':''} onclick="mapNichos()">${ui.busy==='nichos'?'Pensando…':'✨ Mapear mais nichos com IA'}</button>`:'<span class="muted">IA indisponível nesta visualização; use os nichos da lista.</span>'}
+  </div>
+  ${ui.ai?`<div class="note">${esc(ui.ai)}</div>`:''}
+  ${list.map((n,i)=>{const q=encodeURIComponent(n.n+' '+S.city);const idx=allNiches().indexOf(n);return `
+  <div class="card">
+    <div class="row" style="justify-content:space-between;flex-wrap:nowrap">
+      <div><b>${esc(n.n)}</b><div style="margin:4px 0"><span class="tag p">${esc(prod(n.p).nome)}</span></div><div class="muted">${esc(n.dor)}</div></div>
+      <div class="score">${score(n).toFixed(1)}</div>
+    </div>
+    ${n.p==='mkt'?`<label>Vídeo-demo deste nicho ${(S.videos||{})[n.n]?'':'<span class="tag">sem vídeo</span>'}</label><input placeholder="Cole o link do vídeo (GitHub Pages, Drive, YouTube...)" value="${esc((S.videos||{})[n.n]||'')}" onchange="setVid(${idx},this.value)">`:''}
+    <div class="row" style="margin-top:10px">
+      ${n.q&&n.q.length?n.q.map(t=>mapsA(t,t)).join(''):mapsA(n.n,'Buscar no Maps')}
+      ${n.ig?`<a class="btn sm" target="_blank" rel="noopener" href="https://www.google.com/search?q=${encodeURIComponent('site:instagram.com '+n.ig+' '+S.city)}">📸 Instagram</a>`:''}
+      <button class="btn sm pri" onclick="newLead(${idx})">+ Lead</button>
+    </div>
+  </div>`}).join('')}`;
+}
+
+async function mapNichos(){
+  if(!sample)return;
+  ui.busy='nichos';ui.ai=null;render();
+  const ids=ui.prod==='all'?PRODUCTS.filter(p=>p.id!=='sc'):[prod(ui.prod)];
+  const have=allNiches().map(n=>n.n).join('; ');
+  try{
+    let added=0;
+    for(const p of ids){
+      const r=await sample.json(`Você é estrategista de vendas B2B no Brasil. Produto: ${p.nome} — ${p.oferta}. Preço: ${p.preco}. Dor que resolve: ${p.dor}. Região-base: ${S.city} e Baixada Santista (SP). Liste 3 nichos de negócios locais NOVOS (diferentes destes: ${have}) onde esse produto venderia bem para pequenas e médias empresas. Responda SOMENTE um array JSON de objetos {"n":"nome do nicho","dor":"dor específica em uma frase","f":facilidade de fechar 1-5,"t":ticket 1-5}.`,{modelTier:'quick'});
+      (Array.isArray(r)?r:[]).forEach(x=>{if(x&&x.n&&!allNiches().some(y=>y.n.toLowerCase()===String(x.n).toLowerCase())){S.extra.push({n:String(x.n),p:p.id,dor:String(x.dor||''),f:Math.min(5,Math.max(1,+x.f||3)),t:Math.min(5,Math.max(1,+x.t||3)),x:2});added++;}});
+    }
+    ui.ai=added?`${added} nichos novos adicionados pela IA (proximidade começa em 2).`:'A IA não trouxe nichos novos desta vez.';
+    save();
+  }catch(e){ui.ai='Não consegui mapear agora ('+(e&&e.code||'erro')+'). Tente de novo em instantes.';}
+  ui.busy='';render();
+}
+
+function vFunil(){
+  const L=S.leads,tot=L.length,fech=L.filter(l=>l.stage===5).length,resp=L.filter(l=>l.stage>=2&&l.stage!==6).length;
+  return `
+  <div class="stats">
+    <div class="stat"><b>${tot}</b>leads</div>
+    <div class="stat"><b>${L.filter(l=>l.stage>=1&&l.stage!==6).length}</b>abordados</div>
+    <div class="stat"><b>${resp}</b>responderam</div>
+    <div class="stat"><b>${fech}</b>fechados</div>
+  </div>
+  <div class="row" style="margin-bottom:12px"><button class="btn pri" onclick="newLead(-1)">+ Novo lead</button></div>
+  ${ui.impMsg?`<div class="note">${esc(ui.impMsg)}</div>`:''}
+  <details class="card" ${S.leads.length?'':'open'}><summary><b>📥 Importar lista de leads</b></summary>
+    <div class="muted" style="margin:6px 0">Uma por linha: Nome;WhatsApp;Observação.</div>
+    <select id="imp_n">${allNiches().map(n=>`<option ${n.n==='Confeitarias e docerias'?'selected':''}>${esc(n.n)}</option>`).join('')}</select>
+    <textarea id="imp_t" style="min-height:150px;margin-top:6px">${esc(IMP_DEMO)}</textarea>
+    <div class="row" style="margin-top:8px"><button class="btn pri" onclick="importLeads()">Importar</button></div>
+  </details>
+  <div class="board">${STAGES.map((s,si)=>{const ls=L.filter(l=>l.stage===si);return `
+    <div class="col"><h3><span>${s}</span><span>${ls.length}</span></h3>
+    ${ls.map(l=>`<div class="lead"><b>${esc(l.nome)}</b>
+      <span class="tag p">${esc(prod(l.prod).nome)}</span><span class="tag">${esc(l.nicho||'')}</span>
+      ${l.tel?`<div class="muted">${esc(l.tel)}</div>`:''}${l.nota?`<div class="muted">${esc(l.nota)}</div>`:''}
+      <div class="row">
+        <button class="btn sm" ${si===0?'disabled':''} onclick="mv('${l.id}',-1)">◀</button>
+        <button class="btn sm" ${si===STAGES.length-1?'disabled':''} onclick="mv('${l.id}',1)">▶</button>
+        ${si===0&&waLink(l,'x')?`<a class="btn sm pri" target="_blank" rel="noopener" href="${waLink(l,templates(l).m1)}" onclick="markSent('${l.id}')">📲 1ª msg</a>`:''}
+        <button class="btn sm ${si===0&&waLink(l,'x')?'':'pri'}" onclick="openApproach('${l.id}')">💬</button>
+        <button class="btn sm" onclick="editLead('${l.id}')">✏️</button>
+      </div></div>`).join('')||'<div class="muted" style="padding:6px">vazio</div>'}
+    </div>`}).join('')}</div>`;
+}
+
+function mv(id,d){const l=S.leads.find(x=>x.id===id);if(!l)return;l.stage=Math.min(STAGES.length-1,Math.max(0,l.stage+d));save();render();}
+
+function newLead(idx){
+  const n=idx>=0?allNiches()[idx]:null;
+  ui.editing={id:'',nome:'',tel:'',nicho:n?n.n:'',prod:n?n.p:'mkt',stage:0,nota:'',cidade:S.city};
+  leadForm();
+}
+function editLead(id){ui.editing=Object.assign({},S.leads.find(x=>x.id===id));leadForm();}
+function leadForm(){
+  const l=ui.editing;
+  openModal(`<h2>${l.id?'Editar lead':'Novo lead'}</h2>
+  <label>Nome da empresa</label><input id="f_nome" value="${esc(l.nome)}">
+  <label>WhatsApp (com DDD)</label><input id="f_tel" inputmode="tel" value="${esc(l.tel)}">
+  <label>Nicho</label><input id="f_nicho" value="${esc(l.nicho)}">
+  <label>Produto a oferecer</label><select id="f_prod">${PRODUCTS.map(p=>`<option value="${p.id}" ${p.id===l.prod?'selected':''}>${esc(p.nome)}</option>`).join('')}</select>
+  <label>Etapa</label><select id="f_stage">${STAGES.map((s,i)=>`<option value="${i}" ${i===l.stage?'selected':''}>${s}</option>`).join('')}</select>
+  <label>Observações</label><textarea id="f_nota">${esc(l.nota)}</textarea>
+  <div class="row" style="margin-top:12px">
+    <button class="btn pri" onclick="saveLead()">Salvar</button>
+    <button class="btn" onclick="closeModal()">Cancelar</button>
+    ${l.id?`<button class="btn red" id="delb" onclick="delLead()">Excluir</button>`:''}
+  </div>`);
+}
+function saveLead(){
+  const l=ui.editing;
+  l.nome=$('#f_nome').value.trim();if(!l.nome){$('#f_nome').focus();return;}
+  l.tel=$('#f_tel').value.trim();l.nicho=$('#f_nicho').value.trim();l.prod=$('#f_prod').value;l.stage=+$('#f_stage').value;l.nota=$('#f_nota').value.trim();
+  if(l.id){const i=S.leads.findIndex(x=>x.id===l.id);S.leads[i]=l;}
+  else{l.id='l'+Date.now().toString(36);S.leads.push(l);}
+  save();closeModal();ui.tab='funil';render();
+}
+function delLead(){
+  const b=$('#delb');
+  if(b.dataset.arm!=='1'){b.dataset.arm='1';b.textContent='Toque de novo para excluir';return;}
+  S.leads=S.leads.filter(x=>x.id!==ui.editing.id);save();closeModal();render();
+}
+
+/* ---------- abordagem ---------- */
+function templates(l){
+  const p=prod(l.prod),nome=l.nome,nicho=l.nicho||'seu segmento';
+  const nobj=allNiches().find(x=>x.n===l.nicho)||{};
+  const ck=campKey(l);
+  const c=(ck&&ck!=='none')?camps()[ck]:null,vid=(S.videos||{})[l.nicho]||'';
+  if(l.prod==='mkt'&&c){
+    const bfp=ck==='bf',art=c.art,de='d'+art,para=art==='o'?'para o':'para a';
+    const precoTxt=bfp?'O vídeo avulso de Black Friday sai por R$79 (o valor normal é R$149,90), sem mensalidade':'O vídeo avulso é R$149,90, sem mensalidade';
+    const precoObj=bfp?'É um vídeo único de R$79, preço especial de Black Friday (o normal é R$149,90), sem mensalidade':'É um vídeo único de R$149,90, sem mensalidade';
+    const cab=c.dias>0?`Faltam ${c.dias} dias ${para} ${c.nome} (${c.data}).`:`${art==='o'?'O':'A'} ${c.nome} está aí.`;
+    const perg=nobj.camp==='natal'?`A ${nome} já está recebendo encomendas de Natal (panetone, caixas, ceias)? Vocês divulgam em vídeo no Instagram?`:`A ${nome} já tem alguma promoção ou ação planejada ${para} ${c.nome}? Estão pensando em divulgar em vídeo?`;
+    const oque=nobj.camp==='natal'?'os seus produtos de Natal':'a sua promoção';
+    return {
+      m1:`Oi, tudo bem? Aqui é o Gabriel, da MKT Geo Solutions. ${cab} ${perg}`,
+      m2:`Entendi! ${vid?`Olha um exemplo de vídeo que fiz para um negócio parecido com o seu: ${vid}\n\n`:''}Eu faço o da ${nome} com ${oque}, usando um avatar de IA. ${precoTxt}, e combino o prazo para ficar pronto a tempo ${de} ${c.nome}. Quer que eu prepare o seu?`,
+      m3:`Oi! Só passando para lembrar: ${c.dias>0?`faltam ${c.dias} dias ${para} ${c.nome}`:`${art==='o'?'o':'a'} ${c.nome} já começou`}. Ainda dá tempo de ter um vídeo da ${nome} no ar. Quer que eu te mande o exemplo de novo?`,
+      obj:`Se disser "está caro": "Entendo. ${precoObj}, e eu refaço sem cobrar de novo até você aprovar. Se gostar, depois tem o pacote Entrada: 2 vídeos por mês por R$299,90, cancelando quando quiser."`
+    };
+  }
+  return {
+    m1:`Oi, tudo bem? Aqui é o Gabriel, da Baixada Santista. Vi que a ${nome} atua com ${nicho}. Uma pergunta rápida: ${p.pergunta}`,
+    m2:`Entendi, é bem comum mesmo. Eu desenvolvi ${p.oferta} justamente para isso. Posso te mostrar funcionando em 5 minutos, sem compromisso? Se não fizer sentido para a ${nome}, tudo bem.`,
+    m3:`Oi! Passando só para saber se você chegou a ver minha mensagem. Posso te mostrar rapidinho como funciona, sem compromisso.`,
+    obj:`Se disser "está caro": "Entendo. Para comparar, ${p.preco}. Por isso começo pela opção de menor compromisso para você testar e ver o retorno antes de decidir."`
+  };
+}
+function openApproach(id){
+  const l=S.leads.find(x=>x.id===id);ui.approach={lead:l,m:templates(l),busy:false,ai:false};drawApproach();
+}
+function drawApproach(){
+  const a=ui.approach,l=a.lead,m=a.m;
+  const digits=(l.tel||'').replace(/\D/g,'');const num=digits&&digits.length<=11?'55'+digits:digits;
+  const wa=t=>num?`https://wa.me/${num}?text=${encodeURIComponent(t)}`:'';
+  const blocks=[['m1','1ª mensagem — pergunta da dor'],['m2','2ª mensagem — só depois que ele confirmar a dor'],['m3','Follow-up (sem resposta em 2 dias)'],['obj','Se vier objeção']];
+  openModal(`<h2>Abordagem · ${esc(l.nome)}</h2>
+  <div class="muted">${esc(prod(l.prod).nome)} · ${esc(l.nicho||'')} ${a.ai?'· ✨ gerada por IA':'· modelo base'}</div>
+  ${sample?`<div class="row" style="margin-top:8px"><button class="btn pri sm" ${a.busy?'disabled':''} onclick="genApproach()">${a.busy?'Gerando…':'✨ Personalizar com IA'}</button></div>`:''}
+  ${l.prod==='mkt'&&!(S.videos||{})[l.nicho]?'<div class="note" style="margin-top:10px">Este nicho ainda não tem vídeo-demo cadastrado. Cole o link na aba Nichos para ele entrar na 2ª mensagem.</div>':''}
+  ${blocks.map(([k,t])=>`<div class="msg"><div class="t">${t}</div>
+    <textarea id="m_${k}" onchange="ui.approach.m.${k}=this.value">${esc(m[k])}</textarea>
+    <div class="row" style="margin-top:5px">
+      <button class="btn sm" onclick="cp('m_${k}',this)">Copiar</button>
+      ${k!=='obj'&&wa(m[k])?`<a class="btn sm" target="_blank" rel="noopener" href="${wa(m[k])}">Abrir no WhatsApp</a>`:''}
+    </div></div>`).join('')}
+  <div class="row" style="margin-top:14px"><button class="btn" onclick="closeModal()">Fechar</button></div>`);
+}
+async function genApproach(){
+  const a=ui.approach;if(!sample||a.busy)return;a.busy=true;drawApproach();
+  const l=a.lead,p=prod(l.prod);
+  try{
+    const r=await sample.json(`Você é um vendedor consultivo brasileiro, tom natural de WhatsApp, curto, sem exageros e sem emojis em excesso. Escreva a abordagem para este lead.
+Empresa: ${l.nome}. Nicho: ${l.nicho}. Cidade: ${S.city}. Observações: ${l.nota||'nenhuma'}.
+Produto: ${p.nome} — ${p.oferta}. Preço: ${p.preco}. Dor que resolve: ${p.dor}.
+Quem escreve: Gabriel, de Praia Grande/Santos, 13 anos de experiência em laboratório e desenvolvedor dos próprios sistemas.
+Campanha em foco: ${campKey(l)==='bf'?'Black Friday':campKey(l)==='natal'?'Natal':'nenhuma'}. Link do vídeo-demo do nicho: ${(S.videos||{})[l.nicho]||'nenhum'}. ${campKey(l)==='bf'&&l.prod==='mkt'?'Preço do vídeo avulso na Black Friday: R$79 (normal R$149,90).':''} Não prometa prazos, descontos ou resultados que não foram informados.
+Regras: a 1ª mensagem NÃO vende, só faz uma pergunta sobre a dor; a 2ª só oferece uma demonstração curta sem compromisso; nunca invente resultados nem números.
+Responda SOMENTE JSON: {"m1":"...","m2":"...","m3":"follow-up curto","obj":"resposta à objeção mais provável para esse nicho"}`,{modelTier:'default'});
+    if(r&&r.m1){a.m=Object.assign(a.m,{m1:r.m1,m2:r.m2||a.m.m2,m3:r.m3||a.m.m3,obj:r.obj||a.m.obj});a.ai=true;}
+  }catch(e){}
+  a.busy=false;drawApproach();
+}
+async function cp(id,btn){
+  const t=document.getElementById(id);
+  try{await navigator.clipboard.writeText(t.value);btn.textContent='Copiado ✓';}
+  catch(e){t.select();btn.textContent='Selecionado: copie manualmente';}
+}
+
+function vProdutos(){
+  return PRODUCTS.map(p=>`<div class="card"><b>${esc(p.nome)}</b>
+  <div class="muted" style="margin:4px 0">${esc(p.oferta)}</div>
+  <div class="muted"><b>Preço:</b> ${esc(p.preco)}</div>
+  <div class="muted"><b>Dor:</b> ${esc(p.dor)}</div>
+  <div class="muted"><b>Pergunta de abertura:</b> ${esc(p.pergunta)}</div></div>`).join('');
+}
+
+function vDados(){
+  return `<div class="note">Os dados ficam só neste navegador. Para não perder nada, copie o backup abaixo de vez em quando.</div>
+  <label>Backup (copie e guarde)</label><textarea id="bk" style="min-height:140px">${esc(JSON.stringify(S))}</textarea>
+  <div class="row" style="margin-top:8px"><button class="btn" onclick="cp('bk',this)">Copiar backup</button>
+  <button class="btn pri" onclick="restore()">Restaurar do texto acima</button></div>
+  <div class="muted" id="bkmsg" style="margin-top:8px"></div>`;
+}
+function restore(){
+  try{const o=JSON.parse($('#bk').value);if(!Array.isArray(o.leads))throw 0;S=Object.assign({city:'Praia Grande',extra:[],leads:[],videos:{},camp:'bf'},o);save();render();}
+  catch(e){$('#bkmsg').textContent='Texto inválido. Cole o backup completo e tente de novo.';}
+}
+
+function openModal(h){$('#sheet').innerHTML=h;$('#modal').classList.add('on');}
+function closeModal(){$('#modal').classList.remove('on');}
+$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
+render();
+</script>
+</body>
+</html>
