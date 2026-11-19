@@ -193,6 +193,76 @@ async function mapNichos(){
   ui.busy='';render();
 }
 
+
+const API_URL='https://radarapi.vercel.app/api/buscar';
+function getTok(){try{return localStorage.getItem('radar_token')||'';}catch(e){return '';}}
+function setTok(v){try{localStorage.setItem('radar_token',v.trim());}catch(e){}ui.err='';render();}
+function clearTok(){try{localStorage.removeItem('radar_token');}catch(e){}render();}
+async function buscarMaps(more){
+  const tok=getTok();
+  if(!tok){ui.err='Cole a senha do Radar primeiro.';render();return;}
+  const termo=(document.getElementById('bm_t')||{}).value||ui.bmT||'';
+  const nicho=(document.getElementById('bm_n')||{}).value||ui.bmN||'';
+  if(termo.trim().length<2){ui.err='Digite o que buscar.';render();return;}
+  ui.bmT=termo;ui.bmN=nicho;ui.bmBusy=true;ui.err='';render();
+  try{
+    const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json','x-radar-token':tok},
+      body:JSON.stringify({termo:termo.trim(),cidade:S.city,pageToken:more?ui.bmNext:''})});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok){ui.err=r.status===401?'Senha inválida. Confira e cole de novo.':(d.erro||'Erro na busca.');}
+    else{ui.bmRes=(more?(ui.bmRes||[]):[]).concat(d.leads||[]);ui.bmNext=d.nextPageToken||'';if(!ui.bmRes.length)ui.err='Nada encontrado. Tente outro termo ou bairro.';}
+  }catch(e){ui.err='Não consegui falar com o servidor. Abra o Radar pela página hospedada (github.io), não por dentro do Claude.';}
+  ui.bmBusy=false;render();
+}
+function leadFromRes(r){
+  const nn=ui.bmN||'Confeitarias e docerias',n=allNiches().find(x=>x.n===nn)||{n:nn,p:'mkt'};
+  const d=r.diagnostico||{},probs=(d.problemas||[]).map(p=>p.texto).join('; ');
+  return {id:'l'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),nome:r.nome,tel:r.whatsapp?r.telefone:(r.telefone||''),nicho:n.n,prod:n.p,stage:0,
+    nota:('Nota '+(r.nota||'-')+' ('+r.avaliacoes+' aval.). '+(probs?'Melhorar: '+probs+'.':'')).trim(),cidade:S.city,placeId:r.placeId,ig:r.instagram||''};
+}
+function jaNoFunil(r){const dg=(r.telefone||'').replace(/\D/g,'');return S.leads.find(l=>(l.placeId&&l.placeId===r.placeId)||(dg&&(l.tel||'').replace(/\D/g,'')===dg));}
+function addRes(i,sent){
+  const r=ui.bmRes[i];if(!r)return;let l=jaNoFunil(r);
+  if(!l){l=leadFromRes(r);S.leads.push(l);}
+  if(sent&&l.stage===0)l.stage=1;
+  save();setTimeout(render,500);
+}
+function resWa(i){const r=ui.bmRes[i],l=jaNoFunil(r)||leadFromRes(r);return waLink(l,templates(l).m1);}
+function resCard(r,i){
+  const d=r.diagnostico||{},no=jaNoFunil(r);
+  const cor=d.oportunidade==='alta'?'#f59e0b':d.oportunidade==='média'?'#5eead4':'#6b7280';
+  const canal=r.canal==='whatsapp'?'<span class="tag p">📲 WhatsApp</span>':r.instagram?'<span class="tag p">📷 Instagram</span>':r.agregador?'<span class="tag">🔗 Linktree</span>':'<span class="tag" style="color:#f87171">sem canal</span>';
+  const g=encodeURIComponent(r.nome+' '+S.city+' instagram');
+  return `<div class="card">
+   <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><b>${esc(r.nome)}</b><span class="tag" style="color:${cor}">oportunidade ${esc(d.oportunidade||'')}</span></div>
+   <div class="muted">${esc(r.endereco)}</div>
+   <div style="margin:6px 0">${canal}<span class="tag">⭐ ${r.nota||'-'} (${r.avaliacoes})</span><span class="tag">📸 ${r.fotos} fotos</span>${r.telefone?`<span class="tag">${esc(r.telefone)}</span>`:''}</div>
+   ${(d.problemas||[]).length?`<div class="muted"><b>O que melhorar:</b> ${d.problemas.map(p=>esc(p.texto)).join(' · ')}</div>`:'<div class="muted">Perfil bem completo.</div>'}
+   <div class="row" style="margin-top:8px">
+    ${r.canal==='whatsapp'?`<a class="btn sm pri" target="_blank" rel="noopener" href="${resWa(i)}" onclick="addRes(${i},true)">📲 1ª msg</a>`:''}
+    ${r.instagram?`<a class="btn sm" target="_blank" rel="noopener" href="${esc(r.instagram)}">📷 Instagram</a>`:''}
+    ${r.canal==='nenhum'||r.canal==='agregador'?`<a class="btn sm" target="_blank" rel="noopener" href="https://www.google.com/search?q=${g}">🔎 achar Instagram</a>`:''}
+    ${r.mapsUrl?`<a class="btn sm" target="_blank" rel="noopener" href="${esc(r.mapsUrl)}">🗺️ Maps</a>`:''}
+    <button class="btn sm" ${no?'disabled':''} onclick="addRes(${i},false)">${no?'✓ no funil':'＋ Funil'}</button>
+   </div></div>`;
+}
+function vBuscaMaps(){
+  const tok=getTok();
+  if(!tok)return `<div class="card" style="border-color:#0f766e"><b>🔎 Buscar leads no Maps</b>
+    <div class="muted" style="margin:6px 0">Cole a senha do Radar (a RADAR_TOKEN da Vercel). Ela fica só neste aparelho.</div>
+    <div class="row" style="flex-wrap:nowrap"><input id="tk" type="password" placeholder="senha do Radar"><button class="btn pri" onclick="setTok(document.getElementById('tk').value)">Salvar</button></div>
+    ${ui.err?`<div class="note" style="margin-top:8px">${esc(ui.err)}</div>`:''}</div>`;
+  const ns=allNiches(),cur=ui.bmN||'Confeitarias e docerias';
+  return `<div class="card" style="border-color:#0f766e"><b>🔎 Buscar leads no Maps</b>
+    <div class="muted" style="margin:4px 0">Cidade/bairro: <b>${esc(S.city)}</b> (troque na aba Nichos)</div>
+    <select id="bm_n">${ns.map(n=>`<option ${n.n===cur?'selected':''}>${esc(n.n)}</option>`).join('')}</select>
+    <div class="row" style="flex-wrap:nowrap;margin-top:6px"><input id="bm_t" placeholder="ex.: doceria, bolo no pote" value="${esc(ui.bmT||'doceria')}"><button class="btn pri" ${ui.bmBusy?'disabled':''} onclick="buscarMaps(false)" style="white-space:nowrap">${ui.bmBusy?'Buscando…':'Buscar'}</button></div>
+    ${ui.err?`<div class="note" style="margin-top:8px">${esc(ui.err)}</div>`:''}
+    <div class="muted" style="margin-top:6px"><a href="#" onclick="clearTok();return false" style="color:#8b949e">trocar senha</a></div></div>
+    ${(ui.bmRes||[]).map(resCard).join('')}
+    ${ui.bmNext?`<div class="row" style="margin-bottom:12px"><button class="btn" ${ui.bmBusy?'disabled':''} onclick="buscarMaps(true)">Ver mais resultados</button></div>`:''}`;
+}
+
 function vFunil(){
   const L=S.leads,tot=L.length,fech=L.filter(l=>l.stage===5).length,resp=L.filter(l=>l.stage>=2&&l.stage!==6).length;
   return `
@@ -203,6 +273,7 @@ function vFunil(){
     <div class="stat"><b>${fech}</b>fechados</div>
   </div>
   <div class="row" style="margin-bottom:12px"><button class="btn pri" onclick="newLead(-1)">+ Novo lead</button></div>
+  ${vBuscaMaps()}
   ${ui.impMsg?`<div class="note">${esc(ui.impMsg)}</div>`:''}
   <details class="card" ${S.leads.length?'':'open'}><summary><b>📥 Importar lista de leads</b></summary>
     <div class="muted" style="margin:6px 0">Uma por linha: Nome;WhatsApp;Observação.</div>
