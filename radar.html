@@ -236,7 +236,7 @@ function resCard(r,i){
   return `<div class="card">
    <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><b>${esc(r.nome)}</b><span class="tag" style="color:${cor}">oportunidade ${esc(d.oportunidade||'')}</span></div>
    <div class="muted">${esc(r.endereco)}</div>
-   <div style="margin:6px 0">${canal}<span class="tag">⭐ ${r.nota||'-'} (${r.avaliacoes})</span><span class="tag">📸 ${r.fotos} fotos</span>${r.telefone?`<span class="tag">${esc(r.telefone)}</span>`:''}</div>
+   <div style="margin:6px 0">${canal}<span class="tag">⭐ ${r.nota||'-'} (${r.avaliacoes})</span>${r.fotos!=null?`<span class="tag">📸 ${r.fotos} fotos</span>`:''}${r.telefone?`<span class="tag">${esc(r.telefone)}</span>`:''}</div>
    ${(d.problemas||[]).length?`<div class="muted"><b>O que melhorar:</b> ${d.problemas.map(p=>esc(p.texto)).join(' · ')}</div>`:'<div class="muted">Perfil bem completo.</div>'}
    <div class="row" style="margin-top:8px">
     ${r.canal==='whatsapp'?`<a class="btn sm pri" target="_blank" rel="noopener" href="${resWa(i)}" onclick="addRes(${i},true)">📲 1ª msg</a>`:''}
