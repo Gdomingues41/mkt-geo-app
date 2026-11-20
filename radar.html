@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0a2472">
+<link rel="manifest" href="radar-manifest.json">
+<link rel="apple-touch-icon" href="icons/radar-apple-touch.png">
+<link rel="icon" type="image/png" href="icons/radar-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Radar">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Radar de Prospecção</title>
 <style>
 *{box-sizing:border-box;margin:0}
@@ -119,14 +126,20 @@ header h1{display:flex;align-items:center;gap:6px}
 .bdg{margin-left:auto;background:#d10000;color:#fff!important;border-radius:99px;padding:1px 8px;font-size:12px;font-weight:700;min-width:22px;text-align:center}
 .bdg.y{background:#ffff00;color:#04133a!important}
 #burger.dot::after{content:'';position:absolute;top:5px;right:5px;width:10px;height:10px;border-radius:50%;background:#d10000;box-shadow:0 0 0 2px #0a2472}
+.chip{flex:none}
+.syn{margin-left:auto;background:none;border:1px solid #27479f;color:#a6a2a2;border-radius:8px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
+.syn.ok{color:#1cfeba}.syn.err{color:#ff7b7b}.syn.sync{color:#ffff00}
+.syn.sync .ic{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
-<header><button id="burger" onclick="toggleMenu()" aria-label="Menu">☰</button><h1>📡 <span id="ttl">Radar</span></h1></header>
+<header><button id="burger" onclick="toggleMenu()" aria-label="Menu">☰</button><h1>📡 <span id="ttl">Radar</span></h1><button id="sync" class="syn" onclick="go('dados')" aria-label="Sincronização"></button></header>
 <div id="scrim" onclick="toggleMenu()"></div><aside id="panel"></aside>
 <main id="app"></main>
 <div id="modal"><div class="sheet" id="sheet"></div></div>
 
+<script src="firebase-config.js"></script>
 <script>
 const PRODUCTS=[
  {id:'mkt',nome:'MKT Geo Solutions',oferta:'vídeos de anúncio com avatar de IA para pequenos negócios',preco:'Avulso R$149,90 · Entrada R$299,90/mês (2 vídeos) · Padrão R$499,90/mês (4 vídeos)',dor:'não tem tempo nem equipe para produzir vídeo e aparecer nas redes',pergunta:'vocês já usam vídeos nas redes para atrair clientes, ou falta tempo/equipe para produzir?'},
@@ -158,12 +171,13 @@ const STAGES=['Prospectado','Abordado','Respondeu','Demo / Visita','Proposta','F
 const ST_COL=[['#a6a2a2','#04133a'],['#1cfeba','#04133a'],['#ffff00','#04133a'],['#1cfeba','#04133a'],['#ffff00','#04133a'],['#0b5d1e','#ffffff'],['#d10000','#ffffff']];
 const stTag=i=>`<span class="tag" style="background:${ST_COL[i][0]};color:${ST_COL[i][1]};font-weight:600">${STAGES[i]}</span>`;
 const KEY='radar_prospeccao_v1';
-let S={city:'Praia Grande',extra:[],leads:[],videos:{},camp:'bf'};
+let S={city:'Praia Grande',extra:[],leads:[],videos:{},camp:'bf',tomb:{},mu:0};
 try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r));}catch(e){}
 const VBASE='https://gdomingues41.github.io/mkt-geo-app/videos/';
 const DEF_VID={'Salões de beleza e barbearias':VBASE+'barbearia.mp4','Joalherias e relojoarias':VBASE+'joalheria.mp4','Autopeças e oficinas':VBASE+'maqtec.mp4','Confeitarias e docerias':VBASE+'doceria-josi.mp4'};
 S.videos=Object.assign({},DEF_VID,S.videos||{});
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+function save(){persist();if(window.cloudDirty)cloudDirty();}
 let ui={tab:'dash',prod:'mkt',busy:'',editing:null,approach:null,ai:null};
 let sample=null;
 try{if(window.claude&&claude.use){claude.use('sample').then(s=>{sample=s;render();}).catch(()=>{});}}catch(e){}
@@ -204,9 +218,12 @@ const IC={
  back:'<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
  plus:'<path d="M5 12h14"/><path d="M12 5v14"/>',
  play:'<polygon points="6 3 20 12 6 21 6 3"/>',
- check:'<path d="M20 6 9 17l-5-5"/>'
+ check:'<path d="M20 6 9 17l-5-5"/>',
+ cloud:'<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
+ cloudoff:'<path d="m2 2 20 20"/><path d="M5.78 5.78A7 7 0 0 0 9 19h8.5a4.5 4.5 0 0 0 1.31-.19"/><path d="M21.53 16.5A4.5 4.5 0 0 0 17.5 10h-1.79A7 7 0 0 0 10 5.07"/>',
+ refresh:'<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>'
 };
-const EMO={'☰':'menu','📡':'radar','📊':'dashboard','🔎':'search','📋':'kanban','👥':'users','👤':'user','🎯':'target','📦':'package','💾':'database','✨':'sparkles','📸':'camera','📷':'instagram','🔗':'link','📲':'whatsapp','🗺':'pin','💬':'chat','✏':'pencil','🎬':'video','⏰':'clock','🤖':'bot','📥':'download','⭐':'star','📞':'phone','🔥':'flame','←':'back','＋':'plus','▶':'play','✓':'check'};
+const EMO={'☰':'menu','📡':'radar','📊':'dashboard','🔎':'search','📋':'kanban','👥':'users','👤':'user','🎯':'target','📦':'package','💾':'database','✨':'sparkles','📸':'camera','📷':'instagram','🔗':'link','📲':'whatsapp','🗺':'pin','💬':'chat','✏':'pencil','🎬':'video','⏰':'clock','🤖':'bot','📥':'download','⭐':'star','📞':'phone','🔥':'flame','←':'back','＋':'plus','▶':'play','✓':'check','☁':'cloud'};
 const EMO_RE=new RegExp('('+Object.keys(EMO).join('|')+')\\uFE0F?','g');
 function ic(n){return `<svg class="ic ${n}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]||''}</svg>`;}
 function ico(h){return String(h).replace(EMO_RE,(m,e)=>ic(EMO[e]));}
@@ -380,7 +397,7 @@ function resCard(r,i){
   return `<div class="card">
    <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><b>${esc(r.nome)}</b><span class="tag" style="color:${cor}">oportunidade ${esc(d.oportunidade||'')}</span></div>
    <div class="muted">${esc(r.endereco)}</div>
-   <div style="margin:6px 0">${canal}<span class="tag">⭐ ${r.nota||'-'} (${r.avaliacoes})</span><span class="tag">📸 ${r.fotos} fotos</span>${r.telefone?`<span class="tag">${esc(r.telefone)}</span>`:''}</div>
+   <div style="margin:6px 0">${canal}<span class="tag">⭐ ${r.nota||'-'} (${r.avaliacoes})</span>${r.fotos!=null?`<span class="tag">📸 ${r.fotos} fotos</span>`:''}${r.telefone?`<span class="tag">${esc(r.telefone)}</span>`:''}</div>
    ${(d.problemas||[]).length?`<div class="muted"><b>O que melhorar:</b> ${d.problemas.map(p=>esc(p.texto)).join(' · ')}</div>`:'<div class="muted">Perfil bem completo.</div>'}
    <div class="row" style="margin-top:8px">
     ${r.canal==='whatsapp'?`<a class="btn sm pri" target="radar_wa" href="${resWa(i)}" onclick="addRes(${i},true)">📲 1ª msg</a>`:''}
@@ -659,8 +676,119 @@ function vProdutos(){
   <div class="muted"><b>Pergunta de abertura:</b> ${esc(p.pergunta)}</div></div>`).join('');
 }
 
+/* ---------- sincronização na nuvem (Firebase) ---------- */
+const CL={st:'load',user:null,db:null,fs:null,AU:null,auth:null,seen:{},metaSeen:'',timer:null,busy:false,unsub:null,err:'',last:0};
+const metaOf=()=>JSON.stringify({city:S.city,camp:S.camp,videos:S.videos,extra:S.extra});
+const leadJ=l=>{const c=Object.assign({},l);delete c.u;return JSON.stringify(c);};
+function stamp(){
+  let ch=false;S.tomb=S.tomb||{};const ids={};
+  S.leads.forEach(l=>{ids[l.id]=1;const j=leadJ(l);if(CL.seen[l.id]!==j){l.u=Date.now();CL.seen[l.id]=j;ch=true;}});
+  Object.keys(CL.seen).forEach(id=>{if(!ids[id]){S.tomb[id]=Date.now();delete CL.seen[id];ch=true;}});
+  const m=metaOf();if(m!==CL.metaSeen){S.mu=Date.now();CL.metaSeen=m;ch=true;}
+  if(ch)persist();return ch;
+}
+function merge(A,R){
+  const rl=(R&&R.leads)||{},rt=(R&&R.tomb)||{},lt=A.tomb||{},lm={};
+  A.leads.forEach(l=>lm[l.id]=l);
+  const order=A.leads.map(l=>l.id).concat(Object.keys(rl).filter(id=>!lm[id])).concat(Object.keys(rt)).concat(Object.keys(lt));
+  const seen=new Set(),leads=[],tomb={};
+  order.forEach(id=>{
+    if(seen.has(id))return;seen.add(id);
+    const a=lm[id],b=rl[id],t=Math.max(rt[id]||0,lt[id]||0);
+    const best=(a&&b)?((b.u||0)>(a.u||0)?b:a):(a||b);
+    if(best&&(!t||(best.u||0)>t))leads.push(best);else if(t)tomb[id]=t;
+  });
+  const useR=R&&(R.mu||0)>(A.mu||0),M=useR?R:A;
+  return {leads,tomb,city:M.city||A.city,camp:M.camp||A.camp,videos:M.videos||A.videos||{},extra:M.extra||A.extra||[],mu:Math.max(A.mu||0,(R&&R.mu)||0)};
+}
+const snapS=()=>JSON.stringify([S.leads,S.tomb,S.city,S.camp,S.videos,S.extra]);
+function applyMerged(m){
+  S.leads=m.leads;S.tomb=m.tomb;S.city=m.city;S.camp=m.camp;S.videos=m.videos;S.extra=m.extra;S.mu=m.mu;
+  CL.seen={};S.leads.forEach(l=>CL.seen[l.id]=leadJ(l));CL.metaSeen=metaOf();persist();
+}
+function needPush(m,R){
+  if(!R)return m.leads.length>0||Object.keys(m.tomb).length>0;
+  const rl=R.leads||{},rt=R.tomb||{};
+  return m.leads.some(l=>!rl[l.id]||(rl[l.id].u||0)<(l.u||0))||Object.keys(m.tomb).some(id=>(rt[id]||0)<m.tomb[id])||(m.mu||0)>(R.mu||0);
+}
+function softRender(){
+  const el=document.activeElement,t=el&&el.tagName;
+  if($('#modal').classList.contains('on')||t==='TEXTAREA'||t==='INPUT'||t==='SELECT'){CL.pending=true;return;}
+  CL.pending=false;render();
+}
+document.addEventListener('focusout',()=>{if(CL.pending)setTimeout(()=>{if(CL.pending)softRender();},300);});
+function setSt(st){
+  CL.st=st;const b=document.getElementById('sync');
+  if(b){b.className='syn '+(st==='ok'?'ok':st==='err'?'err':st==='sync'||st==='load'?'sync':'');b.innerHTML=ic(st==='out'||st==='off'||st==='err'?'cloudoff':st==='sync'||st==='load'?'refresh':'cloud');
+    b.title={ok:'Sincronizado',sync:'Sincronizando…',out:'Entre para sincronizar',err:'Erro de sincronização',off:'Sincronização indisponível',load:'Carregando…'}[st]||'';}
+  if(ui.tab==='dados')softRender();
+}
+function schedulePush(ms){clearTimeout(CL.timer);CL.timer=setTimeout(pushNow,ms==null?1500:ms);}
+window.cloudDirty=function(){stamp();if(CL.user)schedulePush();};
+async function pushNow(){
+  if(!CL.user||!CL.db)return;
+  if(CL.busy){schedulePush(1500);return;}
+  CL.busy=true;setSt('sync');
+  try{
+    stamp();
+    const {doc,runTransaction,serverTimestamp}=CL.fs,ref=doc(CL.db,'radar',CL.user.uid);
+    const m=await runTransaction(CL.db,async tx=>{
+      const snap=await tx.get(ref),mm=merge(S,snap.exists()?snap.data():null),map={};
+      mm.leads.forEach(l=>map[l.id]=l);
+      tx.set(ref,JSON.parse(JSON.stringify({leads:map,tomb:mm.tomb,city:mm.city,camp:mm.camp,videos:mm.videos,extra:mm.extra,mu:mm.mu}))
+        ,{});
+      tx.update(ref,{updatedAt:serverTimestamp()});
+      return mm;
+    });
+    const before=snapS();applyMerged(m);CL.last=Date.now();CL.err='';
+    if(snapS()!==before)softRender();
+    setSt('ok');
+  }catch(e){CL.err=(e&&e.code)||String(e);setSt('err');}
+  CL.busy=false;
+}
+function startSync(){
+  stopSync();setSt('sync');
+  const {doc,onSnapshot}=CL.fs,ref=doc(CL.db,'radar',CL.user.uid);
+  CL.unsub=onSnapshot(ref,snap=>{
+    if(snap.metadata.hasPendingWrites)return;
+    const R=snap.exists()?snap.data():null,before=snapS(),m=merge(S,R);
+    applyMerged(m);
+    if(snapS()!==before)softRender();
+    if(needPush(m,R))schedulePush(300);else{CL.last=Date.now();setSt('ok');}
+  },e=>{CL.err=(e&&e.code)||String(e);setSt('err');});
+}
+function stopSync(){if(CL.unsub){CL.unsub();CL.unsub=null;}clearTimeout(CL.timer);}
+async function cloudInit(){
+  const c=window.MKT_FIREBASE;
+  if(!c){setSt('off');return;}
+  S.leads.forEach(l=>CL.seen[l.id]=leadJ(l));CL.metaSeen=metaOf();
+  try{
+    const V='10.14.1',B='https://www.gstatic.com/firebasejs/'+V+'/';
+    const [A,AU,FS]=await Promise.all([import(B+'firebase-app.js'),import(B+'firebase-auth.js'),import(B+'firebase-firestore.js')]);
+    const app=A.initializeApp({apiKey:c.apiKey,authDomain:c.projectId+'.firebaseapp.com',projectId:c.projectId},'radar');
+    CL.AU=AU;CL.fs=FS;CL.auth=AU.getAuth(app);CL.db=FS.getFirestore(app);
+    AU.onAuthStateChanged(CL.auth,u=>{CL.user=u;if(u)startSync();else{stopSync();setSt('out');}});
+  }catch(e){CL.err='sdk';setSt('off');}
+}
+async function cloudLogin(){
+  try{await CL.AU.signInWithPopup(CL.auth,new CL.AU.GoogleAuthProvider());}
+  catch(e){CL.err=(e&&e.code)||'login';setSt('err');}
+}
+function cloudLogout(){if(CL.AU)CL.AU.signOut(CL.auth);}
+window.addEventListener('online',()=>{if(CL.user)schedulePush(500);});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&CL.user)schedulePush(300);});
+function vSync(){
+  const st=CL.st,u=CL.user;
+  const msg={load:'Conectando…',off:'Sincronização indisponível neste navegador. Os leads continuam salvos aqui.',out:'Entre com o Google para sincronizar os leads entre o celular e o computador.',sync:'Sincronizando…',ok:'Sincronizado'+(CL.last?' às '+new Date(CL.last).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'')+'. O que você fizer aqui aparece nos outros aparelhos.',err:'Não consegui sincronizar ('+esc(CL.err)+'). Os leads continuam salvos neste aparelho.'}[st];
+  return `<div class="card" style="border-color:#1cfeba"><b>☁ Conta e sincronização</b>
+    <div class="muted" style="margin:6px 0">${msg}</div>
+    ${u?`<div class="muted">Conta: ${esc(u.email||'')}</div><div class="row" style="margin-top:8px"><button class="btn pri" onclick="schedulePush(0)">${ic('refresh')} Sincronizar agora</button><button class="btn" onclick="cloudLogout()">Sair</button></div>`
+       :`<div class="row" style="margin-top:8px"><button class="btn pri" ${CL.AU?'':'disabled'} onclick="cloudLogin()">Entrar com Google</button></div>`}
+  </div>`;
+}
+
 function vDados(){
-  return `<div class="note">Os dados ficam só neste navegador. Para não perder nada, copie o backup abaixo de vez em quando.</div>
+  return `${vSync()}<div class="note">Sem entrar na conta, os dados ficam só neste navegador. O backup abaixo é opcional.</div>
   <label>Backup (copie e guarde)</label><textarea id="bk" style="min-height:140px">${esc(JSON.stringify(S))}</textarea>
   <div class="row" style="margin-top:8px"><button class="btn" onclick="cp('bk',this)">Copiar backup</button>
   <button class="btn pri" onclick="restore()">Restaurar do texto acima</button></div>
@@ -676,7 +804,7 @@ function closeModal(){$('#modal').classList.remove('on');}
 $('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
 setInterval(renderMenu,60000);
 {const h=document.querySelector('header');h.innerHTML=ico(h.innerHTML);}
-ui.anim=true;render();
+ui.anim=true;render();setSt('load');cloudInit();
 </script>
 </body>
 </html>
