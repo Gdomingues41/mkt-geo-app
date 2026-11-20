@@ -288,7 +288,7 @@ const AREAS=['Praia Grande','Boqueirão, Praia Grande','Guilhermina, Praia Grand
 function updFree(){const v=document.getElementById('qfree').value.trim();document.getElementById('qa').href=v?'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(v+' '+S.city):'#';}
 const DESK=!/Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent);
 function waLink(l,t){const d=(l.tel||'').replace(/\D/g,'');if(!d)return '';const num=d.length<=11?'55'+d:d;const q=encodeURIComponent(t);return DESK?'https://web.whatsapp.com/send?phone='+num+'&text='+q:'https://wa.me/'+num+'?text='+q;}
-function markSent(id){const l=S.leads.find(x=>x.id===id);if(l&&l.stage===0){l.stage=1;l.at=Date.now();save();setTimeout(render,600);}}
+function markSent(id){const l=S.leads.find(x=>x.id===id);if(l&&l.stage===0){l.stage=1;l.at=Date.now();l.hist=l.hist||[];if(!sentAt(l,'m1'))l.hist.push({t:l.at,a:LBL.m1});save();setTimeout(render,600);}}
 const IMP_DEMO='';
 function importLeads(){
   const nn=document.getElementById('imp_n').value,n=allNiches().find(x=>x.n===nn)||{n:nn,p:'mkt'};
@@ -444,7 +444,7 @@ function jaNoFunil(r){const dg=(r.telefone||'').replace(/\D/g,'');return S.leads
 function addRes(i,sent){
   const r=ui.bmRes[i];if(!r)return;let l=jaNoFunil(r);
   if(!l){l=leadFromRes(r);S.leads.push(l);}
-  if(sent&&l.stage===0){l.stage=1;l.at=Date.now();}
+  if(sent&&l.stage===0){l.stage=1;l.at=Date.now();l.hist=l.hist||[];if(!sentAt(l,'m1'))l.hist.push({t:l.at,a:LBL.m1});}
   save();setTimeout(render,500);
 }
 function resWa(i){const r=ui.bmRes[i],l=jaNoFunil(r)||leadFromRes(r);return waLink(l,templates(l).m1);}
@@ -459,7 +459,7 @@ function resCard(r,i){
    <div style="margin:6px 0">${canal}<span class="tag">⭐ ${r.nota||'-'} (${r.avaliacoes})</span>${r.fotos!=null?`<span class="tag">📸 ${r.fotos} fotos</span>`:''}${r.telefone?`<span class="tag">${esc(r.telefone)}</span>`:''}</div>
    ${(d.problemas||[]).length?`<div class="muted"><b>O que melhorar:</b> ${d.problemas.map(p=>esc(p.texto)).join(' · ')}</div>`:'<div class="muted">Perfil bem completo.</div>'}
    <div class="row" style="margin-top:8px">
-    ${r.canal==='whatsapp'?`<a class="btn sm pri" target="radar_wa" href="${resWa(i)}" onclick="addRes(${i},true)">📲 1ª msg</a>`:''}
+    ${r.canal==='whatsapp'?(no&&sentAt(no,'m1')?`<span class="tag" style="background:#1cfeba;color:#04133a;font-weight:600">${ic('check')} 1ª msg enviada ${fdt(sentAt(no,'m1'))}</span>`:`<a class="btn sm pri" target="radar_wa" href="${resWa(i)}" onclick="addRes(${i},true)">📲 1ª msg</a>`):''}
     ${r.instagram?`<a class="btn sm" target="_blank" rel="noopener" href="${esc(r.instagram)}">📷 Instagram</a>`:''}
     ${r.canal==='nenhum'||r.canal==='agregador'?`<a class="btn sm" target="_blank" rel="noopener" href="https://www.google.com/search?q=${g}">🔎 achar Instagram</a>`:''}
     ${r.mapsUrl?`<a class="btn sm" target="_blank" rel="noopener" href="${esc(r.mapsUrl)}">🗺️ Maps</a>`:''}
@@ -617,6 +617,8 @@ function openApproach(id){
   ui.cid=id;ui.tab='cliente';ui.menu=false;ui.anim=true;window.scrollTo(0,0);render();
 }
 function drawApproach(){render();}
+function sentAt(l,k){const lb=LBL[k]||k,h=(l.hist||[]).filter(x=>x.a===lb);return h.length?h[h.length-1].t:0;}
+const fdt=t=>new Date(t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
 const LBL={bot:'Pedir a pessoa certa',m1:'1ª mensagem',vid:'Vídeo de exemplo',m2:'2ª mensagem',m3:'Follow-up',prop:'Proposta',obj:'Objeção'};
 function sentMsg(id,label){
   const l=S.leads.find(x=>x.id===id);if(!l)return;
@@ -626,6 +628,7 @@ function sentMsg(id,label){
 function sendWa(id,k){
   const l=S.leads.find(x=>x.id===id),t=document.getElementById('m_'+k);if(!l||!t)return;
   const u=waLink(l,t.value);if(!u)return;
+  const ja=sentAt(l,k);if(ja&&!confirm('Você já enviou "'+(LBL[k]||k)+'" para '+l.nome+' em '+fdt(ja)+'.\nEnviar de novo?'))return;
   const w=window.open(u,'radar_wa');if(w){try{w.opener=null;}catch(e){}w.focus&&w.focus();}sentMsg(id,LBL[k]||k);
 }
 function toggleBot(id){const l=S.leads.find(x=>x.id===id);if(!l)return;l.bot=!l.bot;save();render();}
@@ -649,11 +652,13 @@ function vCliente(){
     if(k==='vid'&&!vid)return `<div class="card"><div class="row" style="justify-content:space-between"><b>${t}</b><span class="muted">${sub}</span></div>
       <div class="note" style="margin-top:8px">Este nicho ainda não tem vídeo-demo. Cole o link do vídeo abaixo e ele entra nas mensagens.</div>
       <div class="row" style="flex-wrap:nowrap"><input id="vl" placeholder="https://..."><button class="btn pri" onclick="setVidN(ui.approach.lead.nicho,document.getElementById('vl').value)">Salvar</button></div></div>`;
-    return `<div class="card"><div class="row" style="justify-content:space-between"><b>${t}</b><span class="muted">${sub}</span></div>
+    const sa=sentAt(l,k);
+    return `<div class="card"${sa?' style="border-color:#1cfeba"':''}><div class="row" style="justify-content:space-between"><b>${t}</b><span class="muted">${sub}</span></div>
+      ${sa?`<div style="margin-top:6px"><span class="tag" style="background:#1cfeba;color:#04133a;font-weight:600">${ic('check')} Já enviada em ${fdt(sa)}</span></div>`:''}
       <textarea id="m_${k}" style="margin-top:8px;min-height:110px" onchange="ui.approach.m.${k}=this.value">${esc(txt)}</textarea>
       <div class="row" style="margin-top:6px">
         <button class="btn sm" onclick="cp('m_${k}',this)">Copiar</button>
-        ${k!=='obj'&&temTel?`<button class="btn sm pri" onclick="sendWa('${l.id}','${k}')">📲 Enviar no WhatsApp</button>`:''}
+        ${k!=='obj'&&temTel?`<button class="btn sm ${sa?'':'pri'}" onclick="sendWa('${l.id}','${k}')">${sa?'↻ Enviar de novo':'📲 Enviar no WhatsApp'}</button>`:''}
         ${k==='vid'&&vid?`<a class="btn sm" target="_blank" rel="noopener" href="${esc(vid)}">▶ Ver vídeo</a>`:''}
       </div></div>`;
   }).join('');
@@ -680,7 +685,7 @@ function vCliente(){
   ${a.ai?'<div class="muted" style="margin-bottom:8px">✨ mensagens personalizadas por IA</div>':''}
   ${l.prod==='mkt'&&camps().bf.dias>=0&&campKey(l)==='bf'?'<div class="muted" style="margin-bottom:8px">Black Friday ativa: o vídeo avulso entra a R$79.</div>':''}
   ${bl}
-  ${temTel?`<div id="abar"><button class="btn pri" onclick="sendWa('${l.id}','m1')">📲 1ª msg</button>${vid?`<button class="btn" onclick="sendWa('${l.id}','vid')">🎬 Vídeo</button>`:''}<button class="btn" onclick="sendWa('${l.id}','m3')">⏰ Follow-up</button></div>`:''}
+  ${temTel?`<div id="abar">${[['m1','📲 1ª msg'],['vid','🎬 Vídeo'],['m3','⏰ Follow-up']].filter(([k])=>k!=='vid'||vid).map(([k,t])=>`<button class="btn ${k==='m1'&&!sentAt(l,'m1')?'pri':''}" onclick="sendWa('${l.id}','${k}')">${sentAt(l,k)?'✓ '+t.replace(/^\S+\s/,'')+' enviada':t}</button>`).join('')}</div>`:''}
   ${hist?`<div class="card"><b>Histórico</b><div style="margin-top:6px">${hist}</div></div>`:''}`;
 }
 function listaClientes(){
