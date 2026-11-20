@@ -173,6 +173,7 @@ const stTag=i=>`<span class="tag" style="background:${ST_COL[i][0]};color:${ST_C
 const KEY='radar_prospeccao_v1';
 let S={city:'Praia Grande',extra:[],leads:[],videos:{},camp:'bf',tomb:{},mu:0};
 try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r));}catch(e){}
+if(!S.city)S.city='Praia Grande';
 const VBASE='https://gdomingues41.github.io/mkt-geo-app/videos/';
 const DEF_VID={'Salões de beleza e barbearias':VBASE+'barbearia.mp4','Joalherias e relojoarias':VBASE+'joalheria.mp4','Autopeças e oficinas':VBASE+'maqtec.mp4','Confeitarias e docerias':VBASE+'doceria-josi.mp4'};
 S.videos=Object.assign({},DEF_VID,S.videos||{});
@@ -389,6 +390,8 @@ const REGIOES={
 };
 const REG_SUG={lab:['Polos do açúcar (SP)','Portos e usinas (Sul/Centro-Oeste)','Nordeste (açúcar e porto)'],pod:['Interior de SP','Capitais Sudeste e Sul'],mkt:['Baixada Santista','Interior de SP'],rc:['Capitais Sudeste e Sul'],sc:[]};
 function regSug(){const nn=ui.bmN||'Confeitarias e docerias',n=allNiches().find(x=>x.n===nn)||{p:'mkt'};return REG_SUG[n.p]||[];}
+function setNicho(v){const n=allNiches().find(x=>x.n===v)||{n:v};ui.bmN=v;ui.bmT=nTerms(n)[0]||'';ui.err='';ui.bmRes=[];ui.bmNext='';render();}
+function setTermo(t){ui.bmT=t;ui.err='';render();}
 function stopMulti(){ui.bmStop=true;}
 async function buscarMulti(){
   const tok=getTok(),reg=ui.bmReg;
@@ -450,11 +453,12 @@ function vBuscaMaps(){
     <div class="muted" style="margin:6px 0">Cole a senha do Radar (a RADAR_TOKEN da Vercel). Ela fica só neste aparelho.</div>
     <div class="row" style="flex-wrap:nowrap"><input id="tk" type="password" placeholder="senha do Radar"><button class="btn pri" onclick="setTok(document.getElementById('tk').value)">Salvar</button></div>
     ${ui.err?`<div class="note" style="margin-top:8px">${esc(ui.err)}</div>`:''}</div>`;
-  const ns=allNiches(),cur=ui.bmN||'Confeitarias e docerias';
+  const ns=allNiches(),cur=ui.bmN||'Confeitarias e docerias',cn=ns.find(x=>x.n===cur)||{n:cur};
   return `<div class="card" style="border-color:#1cfeba"><b>🔎 Buscar leads no Maps</b>
     <div class="muted" style="margin:4px 0">Cidade/bairro: <b>${esc(S.city)}</b></div>
-    <select id="bm_n">${ns.map(n=>`<option ${n.n===cur?'selected':''}>${esc(n.n)}</option>`).join('')}</select>
-    <div class="row" style="flex-wrap:nowrap;margin-top:6px"><input id="bm_t" placeholder="ex.: doceria, bolo no pote" value="${esc(ui.bmT||'doceria')}"><button class="btn pri" ${ui.bmBusy?'disabled':''} onclick="buscarMaps(false)" style="white-space:nowrap">${ui.bmBusy?'Buscando…':'Buscar'}</button></div>
+    <select id="bm_n" onchange="setNicho(this.value)">${ns.map(n=>`<option ${n.n===cur?'selected':''}>${esc(n.n)}</option>`).join('')}</select>
+    <div class="chips" style="padding:6px 0 0">${nTerms(cn).map(t=>`<button class="chip ${(ui.bmT||nTerms(cn)[0])===t?'on':''}" onclick="setTermo(decodeURIComponent('${encodeURIComponent(t)}'))">${esc(t)}</button>`).join('')}</div>
+    <div class="row" style="flex-wrap:nowrap;margin-top:6px"><input id="bm_t" placeholder="ex.: doceria, bolo no pote" value="${esc(ui.bmT||nTerms(cn)[0]||'')}"><button class="btn pri" ${ui.bmBusy?'disabled':''} onclick="buscarMaps(false)" style="white-space:nowrap">${ui.bmBusy?'Buscando…':'Buscar'}</button></div>
     <label style="margin-top:10px">Ampliar: buscar em várias cidades (1 busca por cidade, só leads novos)</label>
     <div class="chips" style="padding-bottom:0">${Object.keys(REGIOES).map(k=>`<button class="chip ${ui.bmReg===k?'on':''}" onclick="ui.bmReg='${k}';render()">${esc(k)}${regSug().includes(k)?' ★':''}</button>`).join('')}</div>
     ${ui.bmReg?`<div class="muted" style="margin:4px 0">${esc(REGIOES[ui.bmReg].join(' · '))}</div>
@@ -744,6 +748,7 @@ function merge(A,R){
 }
 const snapS=()=>JSON.stringify([S.leads,S.tomb,S.city,S.camp,S.videos,S.extra]);
 function applyMerged(m){
+  if(!m.city)m.city='Praia Grande';
   S.leads=m.leads;S.tomb=m.tomb;S.city=m.city;S.camp=m.camp;S.videos=m.videos;S.extra=m.extra;S.mu=m.mu;
   CL.seen={};S.leads.forEach(l=>CL.seen[l.id]=leadJ(l));CL.metaSeen=metaOf();persist();
 }
