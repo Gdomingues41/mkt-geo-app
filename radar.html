@@ -296,6 +296,9 @@ function importLeads(){
 function campKey(l){const n=allNiches().find(x=>x.n===l.nicho)||{};return n.camp||S.camp;}
 function mapsA(t,label){return `<a class="btn sm" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(t+' '+S.city)}">🔎 ${esc(label)}</a>`;}
 function setVid(idx,v){S.videos=S.videos||{};S.videos[allNiches()[idx].n]=v.trim();save();render();}
+const NT={'Salões de beleza e barbearias':['salão de beleza','barbearia'],'Joalherias e relojoarias':['joalheria','relojoaria'],'Autopeças e oficinas':['autopeças','oficina mecânica'],'Mercados e conveniências':['mercado','conveniência'],'Clínicas de estética e odontologia':['clínica de estética','clínica odontológica'],'Restaurantes e delivery':['restaurante','delivery'],'Autoescolas':['autoescola'],'Laboratórios de análise de água':['laboratório análise de água','laboratório de análises ambientais'],'Terminais e usinas de açúcar':['usina de açúcar','terminal açucareiro'],'Trading e empresas de inspeção':['empresa de inspeção','trading agrícola'],'Laboratórios de solo e efluentes':['laboratório de solo','laboratório efluentes'],'Redes de lojas e franquias':['franquia','rede de lojas'],'Empresas de merchandising/promotores':['merchandising','empresa de promotores'],'Limpeza e segurança patrimonial':['empresa de limpeza','segurança patrimonial'],'Criadores de economia doméstica (parceria)':['economia doméstica']};
+function nTerms(n){return (n.q&&n.q.length)?n.q:(NT[n.n]||[n.n]);}
+function buscaNicho(idx,t){const n=allNiches()[idx];ui.bmN=n.n;ui.bmT=t;ui.bmRes=[];ui.bmNext='';ui.err='';go('busca');if(getTok())setTimeout(()=>buscarMaps(false),60);}
 function vNichos(){
   const list=allNiches().filter(n=>ui.prod==='all'||n.p===ui.prod);
   const cs=camps(),cl=c=>c.dias>0?`${c.dias} dias (${c.data})`:'é agora';
@@ -330,7 +333,7 @@ function vNichos(){
     </div>
     ${n.p==='mkt'?`<label>Vídeo-demo deste nicho ${(S.videos||{})[n.n]?'':'<span class="tag">sem vídeo</span>'}</label><input placeholder="Cole o link do vídeo (GitHub Pages, Drive, YouTube...)" value="${esc((S.videos||{})[n.n]||'')}" onchange="setVid(${idx},this.value)">`:''}
     <div class="row" style="margin-top:10px">
-      ${n.q&&n.q.length?n.q.map(t=>mapsA(t,t)).join(''):mapsA(n.n,'Buscar no Maps')}
+      ${nTerms(n).map(t=>`<button class="btn sm pri" onclick="buscaNicho(${idx},decodeURIComponent('${encodeURIComponent(t)}'))">${ic('search')} ${esc(t)}</button>`).join('')}
       ${n.ig?`<a class="btn sm" target="_blank" rel="noopener" href="https://www.google.com/search?q=${encodeURIComponent('site:instagram.com '+n.ig+' '+S.city)}">📸 Instagram</a>`:''}
       <button class="btn sm pri" onclick="newLead(${idx})">+ Lead</button>
     </div>
@@ -375,11 +378,45 @@ async function buscarMaps(more){
   }catch(e){ui.err='Não consegui falar com o servidor. Abra o Radar pela página hospedada (github.io), não por dentro do Claude.';}
   ui.bmBusy=false;render();
 }
+
+const REGIOES={
+ 'Baixada Santista':['Santos','São Vicente','Guarujá','Cubatão','Praia Grande','Mongaguá','Itanhaém','Bertioga'],
+ 'Interior de SP':['Campinas','Ribeirão Preto','Piracicaba','Sorocaba','São José dos Campos','Jundiaí','Bauru','São José do Rio Preto'],
+ 'Polos do açúcar (SP)':['Sertãozinho','Ribeirão Preto','Piracicaba','Araraquara','Jaú','Araçatuba','Presidente Prudente','Barretos'],
+ 'Portos e usinas (Sul/Centro-Oeste)':['Paranaguá','Maringá','Londrina','Curitiba','Uberaba','Goiânia','Rio Verde','Campo Grande'],
+ 'Nordeste (açúcar e porto)':['Maceió','Recife','Salvador','João Pessoa','Natal','Fortaleza','Aracaju'],
+ 'Capitais Sudeste e Sul':['São Paulo','Rio de Janeiro','Belo Horizonte','Vitória','Curitiba','Porto Alegre','Florianópolis']
+};
+const REG_SUG={lab:['Polos do açúcar (SP)','Portos e usinas (Sul/Centro-Oeste)','Nordeste (açúcar e porto)'],pod:['Interior de SP','Capitais Sudeste e Sul'],mkt:['Baixada Santista','Interior de SP'],rc:['Capitais Sudeste e Sul'],sc:[]};
+function regSug(){const nn=ui.bmN||'Confeitarias e docerias',n=allNiches().find(x=>x.n===nn)||{p:'mkt'};return REG_SUG[n.p]||[];}
+function stopMulti(){ui.bmStop=true;}
+async function buscarMulti(){
+  const tok=getTok(),reg=ui.bmReg;
+  if(!tok||!reg||!REGIOES[reg])return;
+  const termo=((document.getElementById('bm_t')||{}).value||ui.bmT||'').trim();
+  const nicho=(document.getElementById('bm_n')||{}).value||ui.bmN||'';
+  if(termo.length<2){ui.err='Digite o que buscar.';render();return;}
+  ui.bmT=termo;ui.bmN=nicho;ui.bmBusy=true;ui.bmStop=false;ui.err='';ui.bmRes=[];ui.bmNext='';
+  const cids=REGIOES[reg],seen=new Set();let skipped=0;
+  for(let i=0;i<cids.length&&!ui.bmStop;i++){
+    ui.bmProg=(i+1)+'/'+cids.length+': '+cids[i];render();
+    try{
+      const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json','x-radar-token':tok},body:JSON.stringify({termo,cidade:cids[i],pageToken:''})});
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok){ui.err=r.status===401?'Senha inválida. Confira e cole de novo.':r.status===429?'Limite de buscas por minuto. Aguarde 1 minuto e tente de novo.':(d.erro||'Erro na busca.');break;}
+      (d.leads||[]).forEach(x=>{if(seen.has(x.placeId))return;seen.add(x.placeId);if(jaNoFunil(x)){skipped++;return;}x._c=cids[i];ui.bmRes.push(x);});
+    }catch(e){ui.err='Não consegui falar com o servidor. Abra o Radar pela página hospedada (github.io).';break;}
+    if(i<cids.length-1&&!ui.bmStop)await new Promise(ok=>setTimeout(ok,7000));
+  }
+  ui.bmBusy=false;ui.bmProg='';
+  if(!ui.err)ui.err=ui.bmRes.length?'Busca em '+cids.length+' cidades: '+ui.bmRes.length+' leads novos'+(skipped?' ('+skipped+' já estavam no funil)':'')+'.':'Nada novo encontrado nessas cidades.';
+  render();
+}
 function leadFromRes(r){
   const nn=ui.bmN||'Confeitarias e docerias',n=allNiches().find(x=>x.n===nn)||{n:nn,p:'mkt'};
   const d=r.diagnostico||{},probs=(d.problemas||[]).map(p=>p.texto).join('; ');
   return {id:'l'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),nome:r.nome,tel:r.whatsapp?r.telefone:(r.telefone||''),nicho:n.n,prod:n.p,stage:0,
-    nota:('Nota '+(r.nota||'-')+' ('+r.avaliacoes+' aval.). '+(probs?'Melhorar: '+probs+'.':'')).trim(),cidade:S.city,placeId:r.placeId,ig:r.instagram||''};
+    nota:('Nota '+(r.nota||'-')+' ('+r.avaliacoes+' aval.). '+(probs?'Melhorar: '+probs+'.':'')).trim(),cidade:r._c||S.city,placeId:r.placeId,ig:r.instagram||''};
 }
 function jaNoFunil(r){const dg=(r.telefone||'').replace(/\D/g,'');return S.leads.find(l=>(l.placeId&&l.placeId===r.placeId)||(dg&&(l.tel||'').replace(/\D/g,'')===dg));}
 function addRes(i,sent){
@@ -418,6 +455,10 @@ function vBuscaMaps(){
     <div class="muted" style="margin:4px 0">Cidade/bairro: <b>${esc(S.city)}</b></div>
     <select id="bm_n">${ns.map(n=>`<option ${n.n===cur?'selected':''}>${esc(n.n)}</option>`).join('')}</select>
     <div class="row" style="flex-wrap:nowrap;margin-top:6px"><input id="bm_t" placeholder="ex.: doceria, bolo no pote" value="${esc(ui.bmT||'doceria')}"><button class="btn pri" ${ui.bmBusy?'disabled':''} onclick="buscarMaps(false)" style="white-space:nowrap">${ui.bmBusy?'Buscando…':'Buscar'}</button></div>
+    <label style="margin-top:10px">Ampliar: buscar em várias cidades (1 busca por cidade, só leads novos)</label>
+    <div class="chips" style="padding-bottom:0">${Object.keys(REGIOES).map(k=>`<button class="chip ${ui.bmReg===k?'on':''}" onclick="ui.bmReg='${k}';render()">${esc(k)}${regSug().includes(k)?' ★':''}</button>`).join('')}</div>
+    ${ui.bmReg?`<div class="muted" style="margin:4px 0">${esc(REGIOES[ui.bmReg].join(' · '))}</div>
+    <div class="row" style="margin-top:4px">${ui.bmBusy&&ui.bmProg?`<span class="muted">Buscando ${esc(ui.bmProg)}…</span><button class="btn sm" onclick="stopMulti()">Parar</button>`:`<button class="btn pri" ${ui.bmBusy?'disabled':''} onclick="buscarMulti()">${ic('search')} Buscar nas ${REGIOES[ui.bmReg].length} cidades</button>`}</div>`:'<div class="muted">★ = regiões sugeridas para o nicho escolhido.</div>'}
     ${ui.err?`<div class="note" style="margin-top:8px">${esc(ui.err)}</div>`:''}
    <div class="muted" style="margin-top:6px"><a href="#" onclick="clearTok();return false" style="color:#a6a2a2">trocar senha</a></div></div>
     ${(ui.bmRes||[]).map(resCard).join('')}
