@@ -1,6 +1,6 @@
 // Bump this version string whenever you update any file in the app,
 // so devices that already installed it pick up the new version.
-const CACHE_NAME = 'mktgeo-v11';
+const CACHE_NAME = 'mktgeo-v12';
 
 const ASSETS = [
   './',
@@ -41,6 +41,16 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   // Pedidos a outros domínios (Firestore, links de pagamento) vão direto pra rede.
   if (new URL(event.request.url).origin !== self.location.origin) return;
+  // Radar: sempre tenta a rede primeiro, para o celular receber a versão nova.
+  if (event.request.method === 'GET' && /radar/i.test(new URL(event.request.url).pathname)) {
+    event.respondWith(
+      fetch(event.request).then((response) => {
+        if (response.ok) { const c = response.clone(); caches.open(CACHE_NAME).then((cache) => cache.put(event.request, c)); }
+        return response;
+      }).catch(() => caches.match(event.request))
+    );
+    return;
+  }
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
