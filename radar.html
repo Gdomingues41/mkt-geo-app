@@ -3,63 +3,87 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0a2472">
 <title>Radar de Prospecção</title>
 <style>
 *{box-sizing:border-box;margin:0}
-body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#0d1117;color:#e6edf3;font-size:15px;line-height:1.4}
-header{padding:14px 14px 0;position:sticky;top:0;background:#0d1117;z-index:5;border-bottom:1px solid #21262d}
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#061443;color:#e6edf3;font-size:15px;line-height:1.4}
+header{padding:14px 14px 0;position:sticky;top:0;background:#061443;z-index:5;border-bottom:1px solid #1a3596}
 h1{font-size:18px;display:flex;gap:8px;align-items:center}
-h1 small{font-weight:400;color:#8b949e;font-size:12px}
+h1 small{font-weight:400;color:#a6a2a2;font-size:12px}
 nav{display:flex;gap:4px;margin-top:10px;overflow-x:auto}
-nav button{background:none;border:0;color:#8b949e;padding:9px 12px;font-size:14px;border-bottom:2px solid transparent;white-space:nowrap;cursor:pointer}
-nav button.on{color:#2dd4bf;border-color:#2dd4bf}
+nav button{background:none;border:0;color:#a6a2a2;padding:9px 12px;font-size:14px;border-bottom:2px solid transparent;white-space:nowrap;cursor:pointer}
+nav button.on{color:#1cfeba;border-color:#1cfeba}
 main{padding:14px;max-width:1100px;margin:auto}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-input,select,textarea{background:#161b22;border:1px solid #30363d;color:#e6edf3;border-radius:8px;padding:9px 10px;font:inherit;width:100%}
+input,select,textarea{background:#0a2472;border:1px solid #27479f;color:#e6edf3;border-radius:8px;padding:9px 10px;font:inherit;width:100%}
 textarea{min-height:90px;resize:vertical}
-label{font-size:12px;color:#8b949e;display:block;margin:8px 0 3px}
-.btn{background:#21262d;border:1px solid #30363d;color:#e6edf3;border-radius:8px;padding:8px 12px;font:inherit;font-size:13px;cursor:pointer;text-decoration:none;display:inline-block}
-.btn.pri{background:#0f766e;border-color:#0f766e;color:#fff}
+label{font-size:12px;color:#a6a2a2;display:block;margin:8px 0 3px}
+.btn{background:#1a3596;border:1px solid #27479f;color:#e6edf3;border-radius:8px;padding:8px 12px;font:inherit;font-size:13px;cursor:pointer;text-decoration:none;display:inline-block}
+.btn.pri{background:#1cfeba;border-color:#1cfeba;color:#04133a;font-weight:600}
 .btn.sm{padding:5px 9px;font-size:12px}
-.btn.red{color:#f87171}
-.card{background:#161b22;border:1px solid #21262d;border-radius:12px;padding:12px;margin-bottom:10px}
-.tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;background:#1f2937;color:#9ca3af;margin-right:4px}
-.tag.p{background:#0f2e2b;color:#5eead4}
-.score{font-weight:700;font-size:18px;color:#2dd4bf;min-width:38px;text-align:right}
-.muted{color:#8b949e;font-size:13px}
+.btn.red{color:#ff7b7b}
+.card{background:#0a2472;border:1px solid #1a3596;border-radius:12px;padding:12px;margin-bottom:10px}
+.tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;background:#12308a;color:#c9cbd6;margin-right:4px}
+.tag.p{background:#0b5d1e;color:#1cfeba}
+.score{font-weight:700;font-size:18px;color:#1cfeba;min-width:38px;text-align:right}
+.muted{color:#a6a2a2;font-size:13px}
 .chips{display:flex;gap:6px;overflow-x:auto;padding:4px 0 10px}
-.chip{border:1px solid #30363d;background:none;color:#8b949e;border-radius:99px;padding:5px 12px;font-size:13px;white-space:nowrap;cursor:pointer}
-.chip.on{background:#0f766e;border-color:#0f766e;color:#fff}
+.chip{border:1px solid #27479f;background:none;color:#a6a2a2;border-radius:99px;padding:5px 12px;font-size:13px;white-space:nowrap;cursor:pointer}
+.chip.on{background:#1cfeba;border-color:#1cfeba;color:#04133a;font-weight:600}
 .board{display:flex;gap:10px;overflow-x:auto;padding-bottom:14px;align-items:flex-start}
-.col{min-width:230px;width:230px;background:#0f141b;border:1px solid #21262d;border-radius:12px;padding:8px}
-.col h3{font-size:13px;color:#8b949e;margin:2px 4px 8px;display:flex;justify-content:space-between}
-.lead{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:9px;margin-bottom:8px}
+.col{min-width:230px;width:230px;background:#081a52;border:1px solid #1a3596;border-radius:12px;padding:8px}
+.col h3{font-size:13px;color:#a6a2a2;margin:2px 4px 8px;display:flex;justify-content:space-between}
+.lead{background:#0a2472;border:1px solid #27479f;border-radius:10px;padding:9px;margin-bottom:8px}
 .lead b{display:block;margin-bottom:3px}
 .lead .row{margin-top:7px;gap:5px}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:12px}
-.stat{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:10px}
-.stat b{font-size:20px;color:#2dd4bf;display:block}
-#modal{position:fixed;inset:0;background:#000a;display:none;align-items:flex-end;justify-content:center;z-index:20}
+.stat{background:#0a2472;border:1px solid #1a3596;border-radius:10px;padding:10px}
+.stat b{font-size:20px;color:#1cfeba;display:block}
+#modal{position:fixed;inset:0;background:#000b;display:none;align-items:flex-end;justify-content:center;z-index:20}
 #modal.on{display:flex}
-.sheet{background:#0d1117;border:1px solid #30363d;border-radius:16px 16px 0 0;width:100%;max-width:640px;max-height:90vh;overflow:auto;padding:16px}
+.sheet{background:#061443;border:1px solid #27479f;border-radius:16px 16px 0 0;width:100%;max-width:640px;max-height:90vh;overflow:auto;padding:16px}
 .sheet h2{font-size:16px;margin-bottom:6px}
 .msg{margin-top:10px}
-.msg .t{font-size:12px;color:#2dd4bf;margin-bottom:3px}
-.note{background:#1c1917;border:1px solid #44403c;border-radius:10px;padding:10px;font-size:13px;color:#d6d3d1;margin-bottom:12px}
+.msg .t{font-size:12px;color:#1cfeba;margin-bottom:3px}
+.note{background:#2a2a00;border:1px solid #ffff00;border-radius:10px;padding:10px;font-size:13px;color:#fffbb3;margin-bottom:12px}
 
 header{display:flex;gap:10px;align-items:center;padding:10px 14px}
 header h1{font-size:17px}
-#burger{background:none;border:1px solid #30363d;color:#e6edf3;border-radius:8px;width:40px;height:38px;font-size:20px;cursor:pointer;flex:none}
-#scrim{position:fixed;inset:0;background:#000a;display:none;z-index:30}
+#burger{background:none;border:1px solid #27479f;color:#e6edf3;border-radius:8px;width:40px;height:38px;font-size:20px;cursor:pointer;flex:none}
+#scrim{position:fixed;inset:0;background:#000b;display:none;z-index:30}
 #scrim.on{display:block}
-#panel{position:fixed;top:0;left:0;bottom:0;width:270px;max-width:82vw;background:#0d1117;border-right:1px solid #21262d;transform:translateX(-100%);transition:transform .2s;z-index:31;padding:14px 10px;overflow:auto}
+#panel{position:fixed;top:0;left:0;bottom:0;width:270px;max-width:82vw;background:#061443;border-right:1px solid #1a3596;transform:translateX(-100%);transition:transform .2s;z-index:31;padding:14px 10px;overflow:auto}
 #panel.on{transform:none}
-.mi{display:flex;gap:10px;align-items:center;width:100%;background:none;border:0;color:#c9d1d9;padding:12px 10px;border-radius:8px;font-size:15px;cursor:pointer;text-align:left}
-.mi.on{background:#0f2e2b;color:#5eead4}
-.mi small{margin-left:auto;color:#8b949e}
-.bar{height:8px;background:#21262d;border-radius:99px;overflow:hidden;margin-top:6px}
-.bar i{display:block;height:100%;background:#2dd4bf}
+.mi{display:flex;gap:10px;align-items:center;width:100%;background:none;border:0;color:#e6edf3;padding:12px 10px;border-radius:8px;font-size:15px;cursor:pointer;text-align:left}
+.mi.on{background:#0b5d1e;color:#1cfeba}
+.mi small{margin-left:auto;color:#a6a2a2}
+.bar{height:8px;background:#1a3596;border-radius:99px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:#1cfeba}
 .lead.click{cursor:pointer}
+
+header{background:#0a2472;border-bottom:1px solid #27479f}
+#panel{background:#0a2472}
+.mi.on{background:#061443;color:#1cfeba}
+.tag{background:#12308a;color:#e6edf3}
+.tag.p{background:#0b5d1e;color:#1cfeba}
+.stat b{color:#1cfeba}
+.score{color:#1cfeba}
+.btn.red{color:#ff7b7b}
+.btn{min-height:36px}
+#abar{display:none}
+@media(max-width:640px){
+  main{padding:12px 12px 90px}
+  body{font-size:16px}
+  input,select,textarea{font-size:16px}
+  .btn{min-height:44px;padding:10px 14px}
+  .btn.sm{min-height:40px;padding:8px 12px;font-size:13px}
+  .chip{padding:8px 14px}
+  .board{flex-direction:column;overflow:visible}
+  .col{width:100%;min-width:0}
+  #abar{display:flex;position:fixed;left:0;right:0;bottom:0;gap:8px;padding:10px 12px;background:#0a2472;border-top:1px solid #27479f;z-index:10}
+  #abar .btn{flex:1;text-align:center;padding:10px 6px;font-size:13px}
+}
 </style>
 </head>
 <body>
@@ -96,6 +120,8 @@ const SEED=[
  {n:'Criadores de economia doméstica (parceria)',p:'sc',dor:'audiência que quer economizar no mercado',f:2,t:1,x:2}
 ];
 const STAGES=['Prospectado','Abordado','Respondeu','Demo / Visita','Proposta','Fechado','Perdido'];
+const ST_COL=[['#a6a2a2','#04133a'],['#1cfeba','#04133a'],['#ffff00','#04133a'],['#1cfeba','#04133a'],['#ffff00','#04133a'],['#0b5d1e','#ffffff'],['#d10000','#ffffff']];
+const stTag=i=>`<span class="tag" style="background:${ST_COL[i][0]};color:${ST_COL[i][1]};font-weight:600">${STAGES[i]}</span>`;
 const KEY='radar_prospeccao_v1';
 let S={city:'Praia Grande',extra:[],leads:[],videos:{},camp:'bf'};
 try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r));}catch(e){}
@@ -162,7 +188,7 @@ function vNichos(){
   const list=allNiches().filter(n=>ui.prod==='all'||n.p===ui.prod);
   const cs=camps(),cl=c=>c.dias>0?`${c.dias} dias (${c.data})`:'é agora';
   return `
-  <div class="card" style="border-color:#0f766e">
+  <div class="card" style="border-color:#1cfeba">
     <b>🎯 Foco: MKT Geo · campanhas de fim de ano</b>
     <div class="muted" style="margin:4px 0 8px">Black Friday: ${cl(cs.bf)} · Natal: ${cl(cs.natal)}</div>
     <div class="chips" style="padding-bottom:0">
@@ -253,8 +279,8 @@ function addRes(i,sent){
 function resWa(i){const r=ui.bmRes[i],l=jaNoFunil(r)||leadFromRes(r);return waLink(l,templates(l).m1);}
 function resCard(r,i){
   const d=r.diagnostico||{},no=jaNoFunil(r);
-  const cor=d.oportunidade==='alta'?'#f59e0b':d.oportunidade==='média'?'#5eead4':'#6b7280';
-  const canal=r.canal==='whatsapp'?'<span class="tag p">📲 WhatsApp</span>':r.instagram?'<span class="tag p">📷 Instagram</span>':r.agregador?'<span class="tag">🔗 Linktree</span>':'<span class="tag" style="color:#f87171">sem canal</span>';
+  const cor=d.oportunidade==='alta'?'#ffff00':d.oportunidade==='média'?'#1cfeba':'#6b7280';
+  const canal=r.canal==='whatsapp'?'<span class="tag p">📲 WhatsApp</span>':r.instagram?'<span class="tag p">📷 Instagram</span>':r.agregador?'<span class="tag">🔗 Linktree</span>':'<span class="tag" style="color:#ff7b7b">sem canal</span>';
   const g=encodeURIComponent(r.nome+' '+S.city+' instagram');
   return `<div class="card">
    <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><b>${esc(r.nome)}</b><span class="tag" style="color:${cor}">oportunidade ${esc(d.oportunidade||'')}</span></div>
@@ -271,17 +297,17 @@ function resCard(r,i){
 }
 function vBuscaMaps(){
   const tok=getTok();
-  if(!tok)return `<div class="card" style="border-color:#0f766e"><b>🔎 Buscar leads no Maps</b>
+  if(!tok)return `<div class="card" style="border-color:#1cfeba"><b>🔎 Buscar leads no Maps</b>
     <div class="muted" style="margin:6px 0">Cole a senha do Radar (a RADAR_TOKEN da Vercel). Ela fica só neste aparelho.</div>
     <div class="row" style="flex-wrap:nowrap"><input id="tk" type="password" placeholder="senha do Radar"><button class="btn pri" onclick="setTok(document.getElementById('tk').value)">Salvar</button></div>
     ${ui.err?`<div class="note" style="margin-top:8px">${esc(ui.err)}</div>`:''}</div>`;
   const ns=allNiches(),cur=ui.bmN||'Confeitarias e docerias';
-  return `<div class="card" style="border-color:#0f766e"><b>🔎 Buscar leads no Maps</b>
+  return `<div class="card" style="border-color:#1cfeba"><b>🔎 Buscar leads no Maps</b>
     <div class="muted" style="margin:4px 0">Cidade/bairro: <b>${esc(S.city)}</b></div>
     <select id="bm_n">${ns.map(n=>`<option ${n.n===cur?'selected':''}>${esc(n.n)}</option>`).join('')}</select>
     <div class="row" style="flex-wrap:nowrap;margin-top:6px"><input id="bm_t" placeholder="ex.: doceria, bolo no pote" value="${esc(ui.bmT||'doceria')}"><button class="btn pri" ${ui.bmBusy?'disabled':''} onclick="buscarMaps(false)" style="white-space:nowrap">${ui.bmBusy?'Buscando…':'Buscar'}</button></div>
     ${ui.err?`<div class="note" style="margin-top:8px">${esc(ui.err)}</div>`:''}
-   <div class="muted" style="margin-top:6px"><a href="#" onclick="clearTok();return false" style="color:#8b949e">trocar senha</a></div></div>
+   <div class="muted" style="margin-top:6px"><a href="#" onclick="clearTok();return false" style="color:#a6a2a2">trocar senha</a></div></div>
     ${(ui.bmRes||[]).map(resCard).join('')}
     ${ui.bmNext?`<div class="row" style="margin-bottom:12px"><button class="btn" ${ui.bmBusy?'disabled':''} onclick="buscarMaps(true)">Ver mais resultados</button></div>`:''}`;
 }
@@ -451,10 +477,10 @@ function vCliente(){
     <button class="btn" onclick="editLead('${l.id}')">✏️ Editar</button>
     ${sample?`<button class="btn pri" ${a.busy?'disabled':''} onclick="genApproach()">${a.busy?'Gerando…':'✨ Personalizar com IA'}</button>`:''}
   </div>
-  <div class="card" style="border-color:#0f766e">
+  <div class="card" style="border-color:#1cfeba">
     <h2 style="font-size:18px">${esc(l.nome)}</h2>
     <div style="margin:6px 0"><span class="tag p">${esc(p.nome)}</span><span class="tag">${esc(l.nicho||'')}</span><span class="tag">${esc(cid)}</span></div>
-    <div class="muted">📞 ${esc(l.tel||'sem telefone')} ${l.tel&&!mob?'<span style="color:#f59e0b">· fixo: confirme se tem WhatsApp</span>':''}</div>
+    <div class="muted">📞 ${esc(l.tel||'sem telefone')} ${l.tel&&!mob?'<span style="color:#ffff00">· fixo: confirme se tem WhatsApp</span>':''}</div>
     <div class="row" style="margin-top:8px">
       <a class="btn sm" target="_blank" rel="noopener" href="${mapsQ}">🗺️ Maps</a>
       <a class="btn sm" target="_blank" rel="noopener" href="${esc(ig)}">📷 ${l.ig?'Instagram':'achar Instagram'}</a>
@@ -465,12 +491,13 @@ function vCliente(){
   ${a.ai?'<div class="muted" style="margin-bottom:8px">✨ mensagens personalizadas por IA</div>':''}
   ${l.prod==='mkt'&&camps().bf.dias>=0&&campKey(l)==='bf'?'<div class="muted" style="margin-bottom:8px">Black Friday ativa: o vídeo avulso entra a R$79.</div>':''}
   ${bl}
+  ${temTel?`<div id="abar"><button class="btn pri" onclick="sendWa('${l.id}','m1')">📲 1ª msg</button>${vid?`<button class="btn" onclick="sendWa('${l.id}','vid')">🎬 Vídeo</button>`:''}<button class="btn" onclick="sendWa('${l.id}','m3')">⏰ Follow-up</button></div>`:''}
   ${hist?`<div class="card"><b>Histórico</b><div style="margin-top:6px">${hist}</div></div>`:''}`;
 }
 function listaClientes(){
   const q=(ui.q||'').toLowerCase(),sf=ui.sf==null?-1:ui.sf;
   const ls=S.leads.filter(l=>(sf<0||l.stage===sf)&&(!q||((l.nome||'')+' '+(l.nicho||'')+' '+(l.tel||'')).toLowerCase().includes(q)));
-  return ls.map(l=>`<div class="card" style="cursor:pointer" onclick="openApproach('${l.id}')"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><b>${esc(l.nome)}</b><span class="tag p">${STAGES[l.stage]}</span></div><div class="muted">${esc(l.nicho||'')} · ${esc(l.tel||'sem telefone')}</div></div>`).join('')||'<div class="muted" style="margin-top:8px">Nenhum cliente por aqui. Use Buscar leads ou + Novo lead.</div>';
+  return ls.map(l=>`<div class="card" style="cursor:pointer" onclick="openApproach('${l.id}')"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><b>${esc(l.nome)}</b>${stTag(l.stage)}</div><div class="muted">${esc(l.nicho||'')} · ${esc(l.tel||'sem telefone')}</div></div>`).join('')||'<div class="muted" style="margin-top:8px">Nenhum cliente por aqui. Use Buscar leads ou + Novo lead.</div>';
 }
 function vClientes(){
   return `<div class="row" style="margin-bottom:10px"><button class="btn pri" onclick="newLead(-1)">+ Novo lead</button></div>
@@ -482,14 +509,14 @@ function vDash(){
   const L=S.leads,cs=camps(),cl=c=>c.dias>0?`${c.dias} dias (${c.data})`:'é agora',hoje=Date.now(),DIA=864e5;
   const n=f=>L.filter(f).length,abord=n(l=>l.stage>=1&&l.stage!==6);
   const novos=L.filter(l=>l.stage===0&&waLink(l,'x')),fol=L.filter(l=>l.stage===1&&(!l.at||hoje-l.at>2*DIA)),quentes=L.filter(l=>l.stage>=2&&l.stage<=4);
-  const row=l=>`<div class="lead click" onclick="openApproach('${l.id}')" style="margin-top:8px"><b>${esc(l.nome)}</b><span class="tag">${esc(l.nicho||'')}</span><span class="tag p">${STAGES[l.stage]}</span></div>`;
+  const row=l=>`<div class="lead click" onclick="openApproach('${l.id}')" style="margin-top:8px"><b>${esc(l.nome)}</b><span class="tag">${esc(l.nicho||'')}</span>${stTag(l.stage)}</div>`;
   const sec=(t,arr,vazio)=>`<div class="card"><b>${t}</b> <span class="muted">(${arr.length})</span>${arr.slice(0,6).map(row).join('')||`<div class="muted" style="margin-top:6px">${vazio}</div>`}${arr.length>6?`<div class="muted" style="margin-top:6px">+${arr.length-6} no funil</div>`:''}</div>`;
   const meta=10,pct=Math.min(100,Math.round(abord/meta*100));
   return `<div class="stats">
     <div class="stat"><b>${L.length}</b>leads</div><div class="stat"><b>${abord}</b>abordados</div>
     <div class="stat"><b>${n(l=>l.stage>=2&&l.stage!==6)}</b>responderam</div><div class="stat"><b>${n(l=>l.stage===4)}</b>propostas</div>
     <div class="stat"><b>${n(l=>l.stage===5)}</b>fechados</div></div>
-  <div class="card" style="border-color:#0f766e"><b>🎯 Meta: 10 abordagens</b> <span class="muted">${abord}/${meta}</span>
+  <div class="card" style="border-color:#1cfeba"><b>🎯 Meta: 10 abordagens</b> <span class="muted">${abord}/${meta}</span>
     <div class="bar"><i style="width:${pct}%"></i></div>
     <div class="muted" style="margin-top:8px">Black Friday: ${cl(cs.bf)} · Natal: ${cl(cs.natal)}</div></div>
   <div class="row" style="margin-bottom:12px"><button class="btn pri" onclick="go('busca')">🔎 Buscar leads</button><button class="btn" onclick="go('funil')">📋 Funil</button><button class="btn" onclick="go('clientes')">👥 Clientes</button></div>
