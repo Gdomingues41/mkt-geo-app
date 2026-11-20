@@ -325,7 +325,7 @@ function vFunil(){
   <div class="row" style="margin-bottom:12px"><button class="btn pri" onclick="newLead(-1)">+ Novo lead</button></div>
   <div class="board">${STAGES.map((s,si)=>{const ls=L.filter(l=>l.stage===si);return `
     <div class="col"><h3><span>${s}</span><span>${ls.length}</span></h3>
-    ${ls.map(l=>`<div class="lead"><b class="click" style="cursor:pointer" onclick="openApproach('${l.id}')">${esc(l.nome)}</b>
+    ${ls.map(l=>`<div class="lead"><b class="click" style="cursor:pointer" onclick="openApproach('${l.id}')">${esc(l.nome)}${l.bot?' 🤖':''}</b>
       <span class="tag p">${esc(prod(l.prod).nome)}</span><span class="tag">${esc(l.nicho||'')}</span>
       ${l.tel?`<div class="muted">${esc(l.tel)}</div>`:''}${l.nota?`<div class="muted">${esc(l.nota)}</div>`:''}
       <div class="row">
@@ -425,7 +425,11 @@ function extras(l){
     const preco=bf?'R$79 (preço de Black Friday; o normal é R$149,90)':'R$149,90';
     prop=`Proposta para a ${nome}:\n• 1 vídeo de anúncio com avatar de IA, no estilo do exemplo\n• Valor: ${preco}, sem mensalidade\n• Refaço sem cobrar de novo até você aprovar\n\nPosso seguir assim?`;
   }else prop=`Proposta para a ${nome}: ${p.nome}. ${p.preco}. Começo pela opção de menor compromisso para você testar e ver o retorno. Posso seguir assim?`;
-  return {vid:vid?`Oi! Separei um exemplo de vídeo que fiz para um negócio parecido com o da ${nome}:\n${vid}\n\nO da ${nome} ficaria nesse estilo, com a sua marca e os seus produtos. O que achou?`:'',prop};
+  const cc=(ck&&ck!=='none')?camps()[ck]:null;
+  const bot=(l.prod==='mkt')
+    ?`Oi! Aqui é o Gabriel, da MKT Geo Solutions. Queria falar com quem cuida do Instagram e da divulgação da ${nome}. É algo rápido${cc?` sobre vídeo ${cc.art==='o'?'para o':'para a'} ${cc.nome}`:''}. Quem seria a pessoa?`
+    :`Oi! Aqui é o Gabriel, da Baixada Santista. Queria falar com o responsável da ${nome} sobre ${p.oferta}. Quem seria a pessoa certa?`;
+  return {bot,vid:vid?`Oi! Separei um exemplo de vídeo que fiz para um negócio parecido com o da ${nome}:\n${vid}\n\nO da ${nome} ficaria nesse estilo, com a sua marca e os seus produtos. O que achou?`:'',prop};
 }
 function openApproach(id){
   const l=S.leads.find(x=>x.id===id);if(!l)return;
@@ -434,7 +438,7 @@ function openApproach(id){
   ui.cid=id;ui.tab='cliente';ui.menu=false;window.scrollTo(0,0);render();
 }
 function drawApproach(){render();}
-const LBL={m1:'1ª mensagem',vid:'Vídeo de exemplo',m2:'2ª mensagem',m3:'Follow-up',prop:'Proposta',obj:'Objeção'};
+const LBL={bot:'Pedir a pessoa certa',m1:'1ª mensagem',vid:'Vídeo de exemplo',m2:'2ª mensagem',m3:'Follow-up',prop:'Proposta',obj:'Objeção'};
 function sentMsg(id,label){
   const l=S.leads.find(x=>x.id===id);if(!l)return;
   if(l.stage===0){l.stage=1;l.at=Date.now();}
@@ -445,6 +449,7 @@ function sendWa(id,k){
   const u=waLink(l,t.value);if(!u)return;
   const w=window.open(u,'radar_wa');if(w){try{w.opener=null;}catch(e){}w.focus&&w.focus();}sentMsg(id,LBL[k]||k);
 }
+function toggleBot(id){const l=S.leads.find(x=>x.id===id);if(!l)return;l.bot=!l.bot;save();render();}
 function setStageC(id,i){const l=S.leads.find(x=>x.id===id);if(!l)return;l.stage=i;l.at=Date.now();save();render();}
 function setNota(id,v){const l=S.leads.find(x=>x.id===id);if(l){l.nota=v;save();}}
 function setVidN(n,v){
@@ -459,6 +464,7 @@ function vCliente(){
   const mapsQ='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(l.nome+' '+cid)+(l.placeId?'&query_place_id='+encodeURIComponent(l.placeId):'');
   const ig=l.ig||('https://www.google.com/search?q='+encodeURIComponent(l.nome+' '+cid+' instagram'));
   const blocks=[['m1','1ª mensagem','pergunta da dor, sem vender'],['vid','🎬 Vídeo de exemplo','manda o vídeo-demo do nicho'],['m2','2ª mensagem','só depois que ele confirmar a dor'],['m3','Follow-up','sem resposta em 2 dias'],['prop','Proposta','quando ele pedir o valor'],['obj','Se vier objeção','resposta pronta']];
+  if(l.bot)blocks.unshift(['bot','🤖 Pedir a pessoa certa','o robô respondeu com menu']);
   const bl=blocks.map(([k,t,sub])=>{
     const txt=m[k]||'';
     if(k==='vid'&&!vid)return `<div class="card"><div class="row" style="justify-content:space-between"><b>${t}</b><span class="muted">${sub}</span></div>
@@ -476,6 +482,7 @@ function vCliente(){
   return `<div class="row" style="margin-bottom:10px">
     <button class="btn" onclick="go('${ui.prevTab||'clientes'}')">← Voltar</button>
     <button class="btn" onclick="editLead('${l.id}')">✏️ Editar</button>
+    <button class="btn ${l.bot?'pri':''}" onclick="toggleBot('${l.id}')">🤖 Atendimento automático</button>
     ${sample?`<button class="btn pri" ${a.busy?'disabled':''} onclick="genApproach()">${a.busy?'Gerando…':'✨ Personalizar com IA'}</button>`:''}
   </div>
   <div class="card" style="border-color:#1cfeba">
@@ -489,6 +496,7 @@ function vCliente(){
   </div>
   <div class="card"><b>Etapa do funil</b><div class="chips" style="margin-top:6px">${STAGES.map((st,i)=>`<button class="chip ${l.stage===i?'on':''}" onclick="setStageC('${l.id}',${i})">${st}</button>`).join('')}</div></div>
   <div class="card"><b>Diagnóstico e observações</b><textarea style="margin-top:6px" onchange="setNota('${l.id}',this.value)">${esc(l.nota||'')}</textarea></div>
+  ${l.bot?`<div class="note">🤖 Este negócio responde por robô. Escolha no menu a opção de atendente ou encomendas e mande a mensagem abaixo. Se o robô travar ou ninguém responder em 1 dia, tente o Instagram ou passe na loja.</div>`:''}
   ${a.ai?'<div class="muted" style="margin-bottom:8px">✨ mensagens personalizadas por IA</div>':''}
   ${l.prod==='mkt'&&camps().bf.dias>=0&&campKey(l)==='bf'?'<div class="muted" style="margin-bottom:8px">Black Friday ativa: o vídeo avulso entra a R$79.</div>':''}
   ${bl}
@@ -498,7 +506,7 @@ function vCliente(){
 function listaClientes(){
   const q=(ui.q||'').toLowerCase(),sf=ui.sf==null?-1:ui.sf;
   const ls=S.leads.filter(l=>(sf<0||l.stage===sf)&&(!q||((l.nome||'')+' '+(l.nicho||'')+' '+(l.tel||'')).toLowerCase().includes(q)));
-  return ls.map(l=>`<div class="card" style="cursor:pointer" onclick="openApproach('${l.id}')"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><b>${esc(l.nome)}</b>${stTag(l.stage)}</div><div class="muted">${esc(l.nicho||'')} · ${esc(l.tel||'sem telefone')}</div></div>`).join('')||'<div class="muted" style="margin-top:8px">Nenhum cliente por aqui. Use Buscar leads ou + Novo lead.</div>';
+  return ls.map(l=>`<div class="card" style="cursor:pointer" onclick="openApproach('${l.id}')"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><b>${esc(l.nome)}${l.bot?' 🤖':''}</b>${stTag(l.stage)}</div><div class="muted">${esc(l.nicho||'')} · ${esc(l.tel||'sem telefone')}</div></div>`).join('')||'<div class="muted" style="margin-top:8px">Nenhum cliente por aqui. Use Buscar leads ou + Novo lead.</div>';
 }
 function vClientes(){
   return `<div class="row" style="margin-bottom:10px"><button class="btn pri" onclick="newLead(-1)">+ Novo lead</button></div>
@@ -510,7 +518,7 @@ function vDash(){
   const L=S.leads,cs=camps(),cl=c=>c.dias>0?`${c.dias} dias (${c.data})`:'é agora',hoje=Date.now(),DIA=864e5;
   const n=f=>L.filter(f).length,abord=n(l=>l.stage>=1&&l.stage!==6);
   const novos=L.filter(l=>l.stage===0&&waLink(l,'x')),fol=L.filter(l=>l.stage===1&&(!l.at||hoje-l.at>2*DIA)),quentes=L.filter(l=>l.stage>=2&&l.stage<=4);
-  const row=l=>`<div class="lead click" onclick="openApproach('${l.id}')" style="margin-top:8px"><b>${esc(l.nome)}</b><span class="tag">${esc(l.nicho||'')}</span>${stTag(l.stage)}</div>`;
+  const row=l=>`<div class="lead click" onclick="openApproach('${l.id}')" style="margin-top:8px"><b>${esc(l.nome)}${l.bot?' 🤖':''}</b><span class="tag">${esc(l.nicho||'')}</span>${stTag(l.stage)}</div>`;
   const sec=(t,arr,vazio)=>`<div class="card"><b>${t}</b> <span class="muted">(${arr.length})</span>${arr.slice(0,6).map(row).join('')||`<div class="muted" style="margin-top:6px">${vazio}</div>`}${arr.length>6?`<div class="muted" style="margin-top:6px">+${arr.length-6} no funil</div>`:''}</div>`;
   const meta=10,pct=Math.min(100,Math.round(abord/meta*100));
   return `<div class="stats">
