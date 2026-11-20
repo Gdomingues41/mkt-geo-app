@@ -146,7 +146,10 @@ const PRODUCTS=[
  {id:'pod',nome:'Pódium CRM',oferta:'CRM em Kanban integrado ao WhatsApp para autoescolas',preco:'sob consulta (validado numa autoescola real)',dor:'leads do WhatsApp se perdem e ninguém acompanha até a matrícula',pergunta:'quando um aluno chama no WhatsApp e não fecha na hora, vocês conseguem acompanhar esse contato até a matrícula?'},
  {id:'lab',nome:'Labortech',oferta:'sistema de gestão de laboratório (amostras, resultados, laudos digitais)',preco:'Básico R$197/mês · Profissional R$397 · Empresarial R$797',dor:'resultados em planilha/papel, laudos manuais e sem rastreabilidade',pergunta:'como vocês controlam hoje os resultados das análises e emitem os laudos: planilha, papel ou sistema?'},
  {id:'rc',nome:'RouteCheck',oferta:'PWA de supervisão de campo com GPS, checklist e fotos',preco:'a definir',dor:'não há prova de que o supervisor visitou a loja nem o que encontrou lá',pergunta:'como vocês comprovam hoje que o supervisor visitou cada unidade e o que ele encontrou?'},
- {id:'sc',nome:'Scanlist Market',oferta:'app de lista de compras com leitor de código de barras',preco:'R$9,90 a R$29,90',dor:'estourar o orçamento no mercado sem comparar preços',pergunta:'você costuma montar a lista e comparar preços antes de ir ao mercado?'}
+ {id:'sc',nome:'Scanlist Market',oferta:'app de lista de compras com leitor de código de barras',preco:'R$9,90 a R$29,90',dor:'estourar o orçamento no mercado sem comparar preços',pergunta:'você costuma montar a lista e comparar preços antes de ir ao mercado?'},
+ {id:'coq',nome:'COQ (Controle Operacional)',oferta:'sistema de controle operacional que registra análises de qualidade por setor (armazéns, caminhões e navios), organiza a passagem de turno e emite boletins',preco:'Essencial R$247/mês por unidade · Pro R$497/mês',dor:'análises por setor e passagem de turno em papel ou planilha, com boletins montados à mão',pergunta:'como vocês registram hoje as análises de qualidade por setor e passam o turno: papel, planilha ou sistema?'},
+ {id:'ins',nome:'Insometric',oferta:'sistema que mapeia a qualidade de armazéns e gera laudos técnicos automáticos com fotos',preco:'Essencial R$197/mês · Pro R$397/mês (ilimitado)',dor:'vistoria de armazém com fotos soltas e laudo montado manualmente, que demora e varia de um inspetor para outro',pergunta:'como vocês montam hoje o laudo de uma vistoria de armazém, com as fotos e as medições: manualmente ou por sistema?'},
+ {id:'mc',nome:'Marmita Certa',oferta:'sistema de cozinha (KDS) que organiza pedidos e entregas e avisa o cliente pelo WhatsApp a cada etapa',preco:'Essencial R$59/mês · Pro R$99/mês',dor:'pedidos que se perdem entre WhatsApp, caderno e cozinha, e o cliente sempre perguntando onde está o pedido',pergunta:'como os pedidos chegam e passam pela cozinha hoje, e quem avisa o cliente quando a entrega sai?'}
 ];
 // facil / ticket / prox = 1..5  (prox = proximidade: já tenho contato ou conheço a dor)
 const SEED=[
@@ -165,7 +168,13 @@ const SEED=[
  {n:'Redes de lojas e franquias',p:'rc',dor:'supervisão de campo sem comprovação',f:3,t:4,x:3},
  {n:'Empresas de merchandising/promotores',p:'rc',dor:'precisam provar visita ao cliente final',f:3,t:4,x:2},
  {n:'Limpeza e segurança patrimonial',p:'rc',dor:'fiscalização de postos em campo',f:3,t:4,x:2},
- {n:'Criadores de economia doméstica (parceria)',p:'sc',dor:'audiência que quer economizar no mercado',f:2,t:1,x:2}
+ {n:'Criadores de economia doméstica (parceria)',p:'sc',dor:'audiência que quer economizar no mercado',f:2,t:1,x:2},
+ {n:'Armazéns gerais e terminais de granéis',p:'coq',dor:'análises por setor, passagem de turno e boletim operacional em papel/planilha',f:3,t:4,x:5,q:['armazém de grãos','terminal de granéis','armazém geral']},
+ {n:'Exportadoras e operadores portuários',p:'coq',dor:'consolidar análises de navios e caminhões e emitir boletins rápido',f:3,t:4,x:4,q:['exportadora de açúcar','operador portuário']},
+ {n:'Cooperativas e armazéns graneleiros',p:'ins',dor:'vistoria de armazém com laudo e fotos montados manualmente',f:3,t:4,x:4,q:['cooperativa agrícola','armazém graneleiro','silos e armazéns']},
+ {n:'Inspeção e vistoria de cargas',p:'ins',dor:'laudos técnicos com fotos que variam de inspetor para inspetor',f:3,t:4,x:4,q:['inspeção de cargas','vistoria de armazém','certificadora agrícola']},
+ {n:'Marmitarias e dark kitchens',p:'mc',dor:'pedidos perdidos entre WhatsApp e cozinha, cliente sem aviso de entrega',f:4,t:2,x:3,q:['marmitaria','dark kitchen','restaurante delivery']},
+ {n:'Pizzarias e hamburguerias',p:'mc',dor:'pico de pedidos à noite e atrasos sem aviso ao cliente',f:4,t:2,x:2,q:['pizzaria','hamburgueria','lanchonete delivery']}
 ];
 const STAGES=['Prospectado','Abordado','Respondeu','Demo / Visita','Proposta','Fechado','Perdido'];
 const ST_COL=[['#a6a2a2','#04133a'],['#1cfeba','#04133a'],['#ffff00','#04133a'],['#1cfeba','#04133a'],['#ffff00','#04133a'],['#0b5d1e','#ffffff'],['#d10000','#ffffff']];
@@ -388,7 +397,7 @@ const REGIOES={
  'Nordeste (açúcar e porto)':['Maceió','Recife','Salvador','João Pessoa','Natal','Fortaleza','Aracaju'],
  'Capitais Sudeste e Sul':['São Paulo','Rio de Janeiro','Belo Horizonte','Vitória','Curitiba','Porto Alegre','Florianópolis']
 };
-const REG_SUG={lab:['Polos do açúcar (SP)','Portos e usinas (Sul/Centro-Oeste)','Nordeste (açúcar e porto)'],pod:['Interior de SP','Capitais Sudeste e Sul'],mkt:['Baixada Santista','Interior de SP'],rc:['Capitais Sudeste e Sul'],sc:[]};
+const REG_SUG={coq:['Baixada Santista','Polos do açúcar (SP)','Portos e usinas (Sul/Centro-Oeste)'],ins:['Polos do açúcar (SP)','Portos e usinas (Sul/Centro-Oeste)','Interior de SP'],mc:['Baixada Santista','Interior de SP'],lab:['Polos do açúcar (SP)','Portos e usinas (Sul/Centro-Oeste)','Nordeste (açúcar e porto)'],pod:['Interior de SP','Capitais Sudeste e Sul'],mkt:['Baixada Santista','Interior de SP'],rc:['Capitais Sudeste e Sul'],sc:[]};
 function regSug(){const nn=ui.bmN||'Confeitarias e docerias',n=allNiches().find(x=>x.n===nn)||{p:'mkt'};return REG_SUG[n.p]||[];}
 const OPR={alta:3,'média':2,media:2,baixa:1};
 function sortRes(){
