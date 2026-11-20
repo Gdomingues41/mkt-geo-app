@@ -406,6 +406,8 @@ function sortRes(){
   const k=r=>OPR[(r.diagnostico||{}).oportunidade]||0;
   R.sort((a,b)=>m==='alta'?(k(b)-k(a)||a._o-b._o):m==='baixa'?(k(a)-k(b)||a._o-b._o):a._o-b._o);
 }
+function resOk(r){const f=ui.bmFilt||'all';return f==='all'||(f==='wa'&&r.canal==='whatsapp')||(f==='ig'&&!!r.instagram)||(f==='new'&&!jaNoFunil(r));}
+function setFilt(f){ui.bmFilt=f;render();}
 function setSort(m){ui.bmSort=m;sortRes();render();}
 function setNicho(v){const n=allNiches().find(x=>x.n===v)||{n:v};ui.bmN=v;ui.bmT=nTerms(n)[0]||'';ui.err='';ui.bmRes=[];ui.bmNext='';render();}
 function setTermo(t){ui.bmT=t;ui.err='';render();}
@@ -483,7 +485,9 @@ function vBuscaMaps(){
     ${ui.err?`<div class="note" style="margin-top:8px">${esc(ui.err)}</div>`:''}
    <div class="muted" style="margin-top:6px"><a href="#" onclick="clearTok();return false" style="color:#a6a2a2">trocar senha</a></div></div>
     ${(ui.bmRes||[]).length>1?`<div class="chips" style="padding:0 0 8px"><span class="muted" style="align-self:center;white-space:nowrap">Ordenar:</span>${[['alta','Oportunidade: alta → baixa'],['baixa','baixa → alta'],['orig','Ordem da busca']].map(([k,t])=>`<button class="chip ${(ui.bmSort||'alta')===k?'on':''}" onclick="setSort('${k}')">${t}</button>`).join('')}</div>`:''}
-    ${(ui.bmRes||[]).map(resCard).join('')}
+    ${(ui.bmRes||[]).length>1?(()=>{const R=ui.bmRes,c=f=>R.filter(r=>{const o=ui.bmFilt;ui.bmFilt=f;const k=resOk(r);ui.bmFilt=o;return k;}).length;return `<div class="chips" style="padding:0 0 8px"><span class="muted" style="align-self:center;white-space:nowrap">Mostrar:</span>${[['all','Todos'],['wa','📲 Só com WhatsApp'],['ig','📷 Só com Instagram'],['new','Só novos']].map(([k,t])=>`<button class="chip ${(ui.bmFilt||'all')===k?'on':''}" onclick="setFilt('${k}')">${t} (${c(k)})</button>`).join('')}</div>`;})():''}
+    ${(ui.bmRes||[]).map((r,i)=>resOk(r)?resCard(r,i):'').join('')}
+    ${(ui.bmRes||[]).length&&!(ui.bmRes||[]).some(resOk)?'<div class="muted" style="margin:8px 0">Nenhum resultado com esse filtro. Escolha "Todos".</div>':''}
     ${ui.bmNext?`<div class="row" style="margin-bottom:12px"><button class="btn" ${ui.bmBusy?'disabled':''} onclick="buscarMaps(true)">Ver mais resultados</button></div>`:''}`;
 }
 
