@@ -46,6 +46,9 @@ label{font-size:12px;color:#a6a2a2;display:block;margin:8px 0 3px}
 .lead .row{margin-top:7px;gap:5px}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:12px}
 .stat{background:#0a2472;border:1px solid #1a3596;border-radius:10px;padding:10px}
+button.stat{font:inherit;color:inherit;text-align:left;cursor:pointer;transition:transform .15s,border-color .15s,box-shadow .15s}
+button.stat:hover{border-color:#1cfeba;transform:translateY(-1px);box-shadow:0 4px 14px rgba(28,254,186,.18)}
+button.stat:active{transform:scale(.97)}
 .stat b{font-size:20px;color:#1cfeba;display:block}
 #modal{position:fixed;inset:0;background:#000b;display:none;align-items:flex-end;justify-content:center;z-index:20}
 #modal.on{display:flex}
@@ -495,10 +498,10 @@ function vFunil(){
   const L=S.leads,tot=L.length,fech=L.filter(l=>l.stage===5).length,resp=L.filter(l=>l.stage>=2&&l.stage!==6).length;
   return `
   <div class="stats">
-    <div class="stat"><b>${tot}</b>leads</div>
-    <div class="stat"><b>${L.filter(l=>l.stage>=1&&l.stage!==6).length}</b>abordados</div>
-    <div class="stat"><b>${resp}</b>responderam</div>
-    <div class="stat"><b>${fech}</b>fechados</div>
+    <button class="stat" onclick="goLista(-1)"><b>${tot}</b>leads</button>
+    <button class="stat" onclick="goLista('ab')"><b>${L.filter(l=>l.stage>=1&&l.stage!==6).length}</b>abordados</button>
+    <button class="stat" onclick="goLista('resp')"><b>${resp}</b>responderam</button>
+    <button class="stat" onclick="goLista(5)"><b>${fech}</b>fechados</button>
   </div>
   <div class="row" style="margin-bottom:12px"><button class="btn pri" onclick="newLead(-1)">+ Novo lead</button></div>
   <div class="board">${STAGES.map((s,si)=>{const ls=L.filter(l=>l.stage===si);return `
@@ -688,15 +691,16 @@ function vCliente(){
   ${temTel?`<div id="abar">${[['m1','📲 1ª msg'],['vid','🎬 Vídeo'],['m3','⏰ Follow-up']].filter(([k])=>k!=='vid'||vid).map(([k,t])=>`<button class="btn ${k==='m1'&&!sentAt(l,'m1')?'pri':''}" onclick="sendWa('${l.id}','${k}')">${sentAt(l,k)?'✓ '+t.replace(/^\S+\s/,'')+' enviada':t}</button>`).join('')}</div>`:''}
   ${hist?`<div class="card"><b>Histórico</b><div style="margin-top:6px">${hist}</div></div>`:''}`;
 }
+function goLista(f){ui.sf=f;ui.q='';go('clientes');}
 function listaClientes(){
-  const q=(ui.q||'').toLowerCase(),sf=ui.sf==null?-1:ui.sf;
-  const ls=S.leads.filter(l=>(sf<0||l.stage===sf)&&(!q||((l.nome||'')+' '+(l.nicho||'')+' '+(l.tel||'')).toLowerCase().includes(q)));
+  const q=(ui.q||'').toLowerCase(),sf=ui.sf==null?-1:ui.sf,okS=l=>sf===-1||(sf==='ab'?(l.stage>=1&&l.stage!==6):sf==='resp'?(l.stage>=2&&l.stage!==6):l.stage===sf);
+  const ls=S.leads.filter(l=>okS(l)&&(!q||((l.nome||'')+' '+(l.nicho||'')+' '+(l.tel||'')).toLowerCase().includes(q)));
   return ls.map(l=>`<div class="card" style="cursor:pointer" onclick="openApproach('${l.id}')"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><b>${esc(l.nome)}${l.bot?' 🤖':''}</b>${stTag(l.stage)}</div><div class="muted">${esc(l.nicho||'')} · ${esc(l.tel||'sem telefone')}${tinfo(l)?' · '+tinfo(l):''}</div></div>`).join('')||'<div class="muted" style="margin-top:8px">Nenhum cliente por aqui. Use Buscar leads ou + Novo lead.</div>';
 }
 function vClientes(){
   return `<div class="row" style="margin-bottom:10px"><button class="btn pri" onclick="newLead(-1)">+ Novo lead</button></div>
   <input placeholder="Buscar por nome, nicho ou telefone" value="${esc(ui.q||'')}" oninput="ui.q=this.value;document.getElementById('cl_list').innerHTML=listaClientes()">
-  <div class="chips" style="margin-top:8px"><button class="chip ${(ui.sf==null||ui.sf<0)?'on':''}" onclick="ui.sf=-1;render()">Todos</button>${STAGES.map((st,i)=>`<button class="chip ${ui.sf===i?'on':''}" onclick="ui.sf=${i};render()">${st}</button>`).join('')}</div>
+  <div class="chips" style="margin-top:8px"><button class="chip ${(ui.sf==null||ui.sf===-1)?'on':''}" onclick="ui.sf=-1;render()">Todos</button><button class="chip ${ui.sf==='ab'?'on':''}" onclick="ui.sf='ab';render()">Abordados</button><button class="chip ${ui.sf==='resp'?'on':''}" onclick="ui.sf='resp';render()">Responderam</button>${STAGES.map((st,i)=>`<button class="chip ${ui.sf===i?'on':''}" onclick="ui.sf=${i};render()">${st}</button>`).join('')}</div>
   <div id="cl_list">${listaClientes()}</div>`;
 }
 function vDash(){
@@ -707,9 +711,9 @@ function vDash(){
   const sec=(t,arr,vazio)=>`<div class="card"><b>${t}</b> <span class="muted">(${arr.length})</span>${arr.slice(0,6).map(row).join('')||`<div class="muted" style="margin-top:6px">${vazio}</div>`}${arr.length>6?`<div class="muted" style="margin-top:6px">+${arr.length-6} no funil</div>`:''}</div>`;
   const meta=10,pct=Math.min(100,Math.round(abord/meta*100));
   return `<div class="stats">
-    <div class="stat"><b>${L.length}</b>leads</div><div class="stat"><b>${abord}</b>abordados</div>
-    <div class="stat"><b>${n(l=>l.stage>=2&&l.stage!==6)}</b>responderam</div><div class="stat"><b>${n(l=>l.stage===4)}</b>propostas</div>
-    <div class="stat"><b>${n(l=>l.stage===5)}</b>fechados</div></div>
+    <button class="stat" onclick="goLista(-1)"><b>${L.length}</b>leads</button><button class="stat" onclick="goLista('ab')"><b>${abord}</b>abordados</button>
+    <button class="stat" onclick="goLista('resp')"><b>${n(l=>l.stage>=2&&l.stage!==6)}</b>responderam</button><button class="stat" onclick="goLista(4)"><b>${n(l=>l.stage===4)}</b>propostas</button>
+    <button class="stat" onclick="goLista(5)"><b>${n(l=>l.stage===5)}</b>fechados</button></div>
   <div class="card" style="border-color:#1cfeba"><b>🎯 Meta: 10 abordagens</b> <span class="muted">${abord}/${meta}</span>
     <div class="bar"><i style="width:${pct}%"></i></div>
     <div class="muted" style="margin-top:8px">Black Friday: ${cl(cs.bf)} · Natal: ${cl(cs.natal)}</div></div>
