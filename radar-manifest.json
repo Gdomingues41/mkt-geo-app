@@ -1,8 +1,8 @@
 {
   "id": "/mkt-geo-app/radar.html",
-  "name": "Radar de Prospecção",
-  "short_name": "Radar",
-  "description": "Prospecção de clientes: busca de leads, funil e mensagens prontas",
+  "name": "GeoRadar",
+  "short_name": "GeoRadar",
+  "description": "Ache clientes no mapa e organize a prospecção",
   "start_url": "./radar.html",
   "scope": "./radar.html",
   "display": "standalone",

@@ -9,9 +9,9 @@
 <link rel="icon" type="image/png" href="icons/radar-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Radar">
+<meta name="apple-mobile-web-app-title" content="GeoRadar">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Radar de Prospecção</title>
+<title>GeoRadar</title>
 <style>
 *{box-sizing:border-box;margin:0}
 body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#061443;color:#e6edf3;font-size:15px;line-height:1.4}
@@ -134,10 +134,40 @@ header h1{display:flex;align-items:center;gap:6px}
 .syn.ok{color:#1cfeba}.syn.err{color:#ff7b7b}.syn.sync{color:#ffff00}
 .syn.sync .ic{animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+#splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:radial-gradient(circle at 50% 42%,#0a2472 0%,#061443 62%,#030b27 100%);transition:opacity .45s ease,transform .45s ease}
+#splash.out{opacity:0;transform:scale(1.04);pointer-events:none}
+#splash .rd{width:min(58vw,240px);height:min(58vw,240px);position:relative}
+#splash .rd svg{width:100%;height:100%;overflow:visible}
+#splash .ring{fill:none;stroke:#27479f;stroke-width:1.5;opacity:0;animation:rg .6s ease forwards}
+#splash .r2{animation-delay:.12s}#splash .r3{animation-delay:.24s}
+#splash .cross{stroke:#27479f;stroke-width:1;opacity:.55}
+#splash .sweep{transform-origin:100px 100px;animation:sw 1.4s cubic-bezier(.4,.1,.3,1) .1s both}
+#splash .blip{fill:#ffff00;opacity:0;transform-origin:138px 70px;animation:bp .9s ease .75s forwards}
+#splash .blip2{fill:none;stroke:#ffff00;stroke-width:1.5;opacity:0;transform-origin:138px 70px;animation:bp2 1s ease-out .8s forwards}
+#splash .dot{fill:#1cfeba}
+#splash h2{margin:0;font-size:26px;letter-spacing:.5px;color:#fff;opacity:0;animation:up .5s ease .55s forwards}
+#splash h2 b{color:#1cfeba}
+#splash p{margin:-8px 0 0;font-size:13px;color:#a6a2a2;opacity:0;animation:up .5s ease .8s forwards}
+@keyframes rg{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:scale(1)}}
+@keyframes sw{from{transform:rotate(-120deg)}to{transform:rotate(300deg)}}
+@keyframes bp{0%{opacity:0;transform:scale(.2)}60%{opacity:1;transform:scale(1.5)}100%{opacity:1;transform:scale(1)}}
+@keyframes bp2{0%{opacity:.9;transform:scale(.5)}100%{opacity:0;transform:scale(3.2)}}
+@keyframes up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){#splash *{animation-duration:.01s!important;animation-delay:0s!important}}
 </style>
 </head>
 <body>
-<header><button id="burger" onclick="toggleMenu()" aria-label="Menu">☰</button><h1>📡 <span id="ttl">Radar</span></h1><button id="sync" class="syn" onclick="go('dados')" aria-label="Sincronização"></button></header>
+<div id="splash" onclick="hideSplash()" aria-hidden="true">
+ <div class="rd"><svg viewBox="0 0 200 200">
+  <defs><linearGradient id="sg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1cfeba" stop-opacity="0"/><stop offset="1" stop-color="#1cfeba" stop-opacity=".55"/></linearGradient></defs>
+  <circle class="ring" cx="100" cy="100" r="92"/><circle class="ring r2" cx="100" cy="100" r="62"/><circle class="ring r3" cx="100" cy="100" r="32"/>
+  <line class="cross" x1="8" y1="100" x2="192" y2="100"/><line class="cross" x1="100" y1="8" x2="100" y2="192"/>
+  <g class="sweep"><path d="M100 100 L192 100 A92 92 0 0 0 166 35 Z" fill="url(#sg)"/><line x1="100" y1="100" x2="192" y2="100" stroke="#1cfeba" stroke-width="2.5" stroke-linecap="round"/></g>
+  <circle class="blip2" cx="138" cy="70" r="6"/><circle class="blip" cx="138" cy="70" r="5.5"/><circle class="dot" cx="100" cy="100" r="4"/>
+ </svg></div>
+ <h2>Geo<b>Radar</b></h2><p>Ache clientes no mapa · MKT Geo Solutions</p>
+</div>
+<header><button id="burger" onclick="toggleMenu()" aria-label="Menu">☰</button><h1>📡 <span id="ttl">GeoRadar</span></h1><button id="sync" class="syn" onclick="go('dados')" aria-label="Sincronização"></button></header>
 <div id="scrim" onclick="toggleMenu()"></div><aside id="panel"></aside>
 <main id="app"></main>
 <div id="modal"><div class="sheet" id="sheet"></div></div>
@@ -266,10 +296,10 @@ function actTab(){return ui.tab==='cliente'?(ui.prevTab||'clientes'):ui.tab;}
 function renderMenu(){
   const act=actTab(),P=pend(),nN=P.nov.length,nF=P.fol.length;
   const bd=k=>k==='dash'?((nN+nF)?`<small class="bdg ${nN?'':'y'}">${nN+nF}</small>`:''):k==='clientes'?(nN?`<small class="bdg">${nN}</small>`:''):k==='funil'&&S.leads.length?`<small>${S.leads.length}</small>`:'';
-  document.title=(nN+nF?`(${nN+nF}) `:'')+'Radar de Prospecção';
+  document.title=(nN+nF?`(${nN+nF}) `:'')+'GeoRadar';
   const bg=document.getElementById('burger');if(bg)bg.classList.toggle('dot',nN+nF>0);
   $('#panel').classList.toggle('on',!!ui.menu);$('#scrim').classList.toggle('on',!!ui.menu);
-  $('#panel').innerHTML=ico('<div style="font-weight:700;margin:4px 8px 12px">📡 Radar de Prospecção</div>'+MENU.map(m=>`<button class="mi ${act===m[0]?'on':''}" onclick="go('${m[0]}')"><span>${m[1]}</span>${m[2]}${bd(m[0])}</button>`).join(''));
+  $('#panel').innerHTML=ico('<div style="font-weight:700;margin:4px 8px 12px">📡 GeoRadar</div>'+MENU.map(m=>`<button class="mi ${act===m[0]?'on':''}" onclick="go('${m[0]}')"><span>${m[1]}</span>${m[2]}${bd(m[0])}</button>`).join(''));
 }
 function render(){
   renderMenu();
@@ -377,7 +407,7 @@ function setTok(v){try{localStorage.setItem('radar_token',v.trim());}catch(e){}u
 function clearTok(){try{localStorage.removeItem('radar_token');}catch(e){}render();}
 async function buscarMaps(more){
   const tok=getTok();
-  if(!tok){ui.err='Cole a senha do Radar primeiro.';render();return;}
+  if(!tok){ui.err='Cole a senha do GeoRadar primeiro.';render();return;}
   const termo=(document.getElementById('bm_t')||{}).value||ui.bmT||'';
   const nicho=(document.getElementById('bm_n')||{}).value||ui.bmN||'';
   if(termo.trim().length<2){ui.err='Digite o que buscar.';render();return;}
@@ -388,7 +418,7 @@ async function buscarMaps(more){
     const d=await r.json().catch(()=>({}));
     if(!r.ok){ui.err=r.status===401?'Senha inválida. Confira e cole de novo.':(d.erro||'Erro na busca.');}
     else{ui.bmRes=(more?(ui.bmRes||[]):[]).concat(d.leads||[]);ui.bmNext=d.nextPageToken||'';if(!ui.bmRes.length)ui.err='Nada encontrado. Tente outro termo ou bairro.';sortRes();}
-  }catch(e){ui.err='Não consegui falar com o servidor. Abra o Radar pela página hospedada (github.io), não por dentro do Claude.';}
+  }catch(e){ui.err='Não consegui falar com o servidor. Abra o GeoRadar pela página hospedada (github.io), não por dentro do Claude.';}
   ui.bmBusy=false;render();
 }
 
@@ -430,7 +460,7 @@ async function buscarMulti(){
       const d=await r.json().catch(()=>({}));
       if(!r.ok){ui.err=r.status===401?'Senha inválida. Confira e cole de novo.':r.status===429?'Limite de buscas por minuto. Aguarde 1 minuto e tente de novo.':(d.erro||'Erro na busca.');break;}
       (d.leads||[]).forEach(x=>{if(seen.has(x.placeId))return;seen.add(x.placeId);if(jaNoFunil(x)){skipped++;return;}x._c=cids[i];ui.bmRes.push(x);});
-    }catch(e){ui.err='Não consegui falar com o servidor. Abra o Radar pela página hospedada (github.io).';break;}
+    }catch(e){ui.err='Não consegui falar com o servidor. Abra o GeoRadar pela página hospedada (github.io).';break;}
     if(i<cids.length-1&&!ui.bmStop)await new Promise(ok=>setTimeout(ok,7000));
   }
   ui.bmBusy=false;ui.bmProg='';sortRes();
@@ -472,8 +502,8 @@ function resCard(r,i){
 function vBuscaMaps(){
   const tok=getTok();
   if(!tok)return `<div class="card" style="border-color:#1cfeba"><b>🔎 Buscar leads no Maps</b>
-    <div class="muted" style="margin:6px 0">Cole a senha do Radar (a RADAR_TOKEN da Vercel). Ela fica só neste aparelho.</div>
-    <div class="row" style="flex-wrap:nowrap"><input id="tk" type="password" placeholder="senha do Radar"><button class="btn pri" onclick="setTok(document.getElementById('tk').value)">Salvar</button></div>
+    <div class="muted" style="margin:6px 0">Cole a senha do GeoRadar (a RADAR_TOKEN da Vercel). Ela fica só neste aparelho.</div>
+    <div class="row" style="flex-wrap:nowrap"><input id="tk" type="password" placeholder="senha do GeoRadar"><button class="btn pri" onclick="setTok(document.getElementById('tk').value)">Salvar</button></div>
     ${ui.err?`<div class="note" style="margin-top:8px">${esc(ui.err)}</div>`:''}</div>`;
   const ns=allNiches(),cur=ui.bmN||'Confeitarias e docerias',cn=ns.find(x=>x.n===cur)||{n:cur};
   return `<div class="card" style="border-color:#1cfeba"><b>🔎 Buscar leads no Maps</b>
@@ -882,6 +912,11 @@ $('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();}
 setInterval(renderMenu,60000);
 {const h=document.querySelector('header');h.innerHTML=ico(h.innerHTML);}
 ui.anim=true;render();setSt('load');cloudInit();
+/* ---------- abertura animada ---------- */
+function hideSplash(){const e=document.getElementById('splash');if(!e||e.classList.contains('out'))return;e.classList.add('out');setTimeout(()=>e.remove(),500);}
+(function(){let seen=0;try{seen=sessionStorage.getItem('radar_splash');sessionStorage.setItem('radar_splash','1');}catch(e){}
+  if(seen){const e=document.getElementById('splash');if(e)e.remove();return;}
+  setTimeout(hideSplash,1900);})();
 </script>
 </body>
 </html>
