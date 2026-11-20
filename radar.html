@@ -375,7 +375,7 @@ async function buscarMaps(more){
       body:JSON.stringify({termo:termo.trim(),cidade:S.city,pageToken:more?ui.bmNext:''})});
     const d=await r.json().catch(()=>({}));
     if(!r.ok){ui.err=r.status===401?'Senha inválida. Confira e cole de novo.':(d.erro||'Erro na busca.');}
-    else{ui.bmRes=(more?(ui.bmRes||[]):[]).concat(d.leads||[]);ui.bmNext=d.nextPageToken||'';if(!ui.bmRes.length)ui.err='Nada encontrado. Tente outro termo ou bairro.';}
+    else{ui.bmRes=(more?(ui.bmRes||[]):[]).concat(d.leads||[]);ui.bmNext=d.nextPageToken||'';if(!ui.bmRes.length)ui.err='Nada encontrado. Tente outro termo ou bairro.';sortRes();}
   }catch(e){ui.err='Não consegui falar com o servidor. Abra o Radar pela página hospedada (github.io), não por dentro do Claude.';}
   ui.bmBusy=false;render();
 }
@@ -390,6 +390,14 @@ const REGIOES={
 };
 const REG_SUG={lab:['Polos do açúcar (SP)','Portos e usinas (Sul/Centro-Oeste)','Nordeste (açúcar e porto)'],pod:['Interior de SP','Capitais Sudeste e Sul'],mkt:['Baixada Santista','Interior de SP'],rc:['Capitais Sudeste e Sul'],sc:[]};
 function regSug(){const nn=ui.bmN||'Confeitarias e docerias',n=allNiches().find(x=>x.n===nn)||{p:'mkt'};return REG_SUG[n.p]||[];}
+const OPR={alta:3,'média':2,media:2,baixa:1};
+function sortRes(){
+  const m=ui.bmSort||'alta',R=ui.bmRes||[];
+  R.forEach((r,i)=>{if(r._o==null)r._o=i;});
+  const k=r=>OPR[(r.diagnostico||{}).oportunidade]||0;
+  R.sort((a,b)=>m==='alta'?(k(b)-k(a)||a._o-b._o):m==='baixa'?(k(a)-k(b)||a._o-b._o):a._o-b._o);
+}
+function setSort(m){ui.bmSort=m;sortRes();render();}
 function setNicho(v){const n=allNiches().find(x=>x.n===v)||{n:v};ui.bmN=v;ui.bmT=nTerms(n)[0]||'';ui.err='';ui.bmRes=[];ui.bmNext='';render();}
 function setTermo(t){ui.bmT=t;ui.err='';render();}
 function stopMulti(){ui.bmStop=true;}
@@ -411,7 +419,7 @@ async function buscarMulti(){
     }catch(e){ui.err='Não consegui falar com o servidor. Abra o Radar pela página hospedada (github.io).';break;}
     if(i<cids.length-1&&!ui.bmStop)await new Promise(ok=>setTimeout(ok,7000));
   }
-  ui.bmBusy=false;ui.bmProg='';
+  ui.bmBusy=false;ui.bmProg='';sortRes();
   if(!ui.err)ui.err=ui.bmRes.length?'Busca em '+cids.length+' cidades: '+ui.bmRes.length+' leads novos'+(skipped?' ('+skipped+' já estavam no funil)':'')+'.':'Nada novo encontrado nessas cidades.';
   render();
 }
@@ -465,6 +473,7 @@ function vBuscaMaps(){
     <div class="row" style="margin-top:4px">${ui.bmBusy&&ui.bmProg?`<span class="muted">Buscando ${esc(ui.bmProg)}…</span><button class="btn sm" onclick="stopMulti()">Parar</button>`:`<button class="btn pri" ${ui.bmBusy?'disabled':''} onclick="buscarMulti()">${ic('search')} Buscar nas ${REGIOES[ui.bmReg].length} cidades</button>`}</div>`:'<div class="muted">★ = regiões sugeridas para o nicho escolhido.</div>'}
     ${ui.err?`<div class="note" style="margin-top:8px">${esc(ui.err)}</div>`:''}
    <div class="muted" style="margin-top:6px"><a href="#" onclick="clearTok();return false" style="color:#a6a2a2">trocar senha</a></div></div>
+    ${(ui.bmRes||[]).length>1?`<div class="chips" style="padding:0 0 8px"><span class="muted" style="align-self:center;white-space:nowrap">Ordenar:</span>${[['alta','Oportunidade: alta → baixa'],['baixa','baixa → alta'],['orig','Ordem da busca']].map(([k,t])=>`<button class="chip ${(ui.bmSort||'alta')===k?'on':''}" onclick="setSort('${k}')">${t}</button>`).join('')}</div>`:''}
     ${(ui.bmRes||[]).map(resCard).join('')}
     ${ui.bmNext?`<div class="row" style="margin-bottom:12px"><button class="btn" ${ui.bmBusy?'disabled':''} onclick="buscarMaps(true)">Ver mais resultados</button></div>`:''}`;
 }
