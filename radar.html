@@ -46,13 +46,25 @@ label{font-size:12px;color:#8b949e;display:block;margin:8px 0 3px}
 .msg{margin-top:10px}
 .msg .t{font-size:12px;color:#2dd4bf;margin-bottom:3px}
 .note{background:#1c1917;border:1px solid #44403c;border-radius:10px;padding:10px;font-size:13px;color:#d6d3d1;margin-bottom:12px}
+
+header{display:flex;gap:10px;align-items:center;padding:10px 14px}
+header h1{font-size:17px}
+#burger{background:none;border:1px solid #30363d;color:#e6edf3;border-radius:8px;width:40px;height:38px;font-size:20px;cursor:pointer;flex:none}
+#scrim{position:fixed;inset:0;background:#000a;display:none;z-index:30}
+#scrim.on{display:block}
+#panel{position:fixed;top:0;left:0;bottom:0;width:270px;max-width:82vw;background:#0d1117;border-right:1px solid #21262d;transform:translateX(-100%);transition:transform .2s;z-index:31;padding:14px 10px;overflow:auto}
+#panel.on{transform:none}
+.mi{display:flex;gap:10px;align-items:center;width:100%;background:none;border:0;color:#c9d1d9;padding:12px 10px;border-radius:8px;font-size:15px;cursor:pointer;text-align:left}
+.mi.on{background:#0f2e2b;color:#5eead4}
+.mi small{margin-left:auto;color:#8b949e}
+.bar{height:8px;background:#21262d;border-radius:99px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:#2dd4bf}
+.lead.click{cursor:pointer}
 </style>
 </head>
 <body>
-<header>
-  <h1>📡 Radar de Prospecção <small>Gabriel · produtos → nichos → funil</small></h1>
-  <nav id="nav"></nav>
-</header>
+<header><button id="burger" onclick="toggleMenu()" aria-label="Menu">☰</button><h1>📡 <span id="ttl">Radar</span></h1></header>
+<div id="scrim" onclick="toggleMenu()"></div><aside id="panel"></aside>
 <main id="app"></main>
 <div id="modal"><div class="sheet" id="sheet"></div></div>
 
@@ -91,7 +103,7 @@ const VBASE='https://gdomingues41.github.io/mkt-geo-app/videos/';
 const DEF_VID={'Salões de beleza e barbearias':VBASE+'barbearia.mp4','Joalherias e relojoarias':VBASE+'joalheria.mp4','Autopeças e oficinas':VBASE+'maqtec.mp4','Confeitarias e docerias':VBASE+'doceria-josi.mp4'};
 S.videos=Object.assign({},DEF_VID,S.videos||{});
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
-let ui={tab:'nichos',prod:'mkt',busy:'',editing:null,approach:null,ai:null};
+let ui={tab:'dash',prod:'mkt',busy:'',editing:null,approach:null,ai:null};
 let sample=null;
 try{if(window.claude&&claude.use){claude.use('sample').then(s=>{sample=s;render();}).catch(()=>{});}}catch(e){}
 
@@ -101,10 +113,21 @@ const prod=id=>PRODUCTS.find(p=>p.id===id)||PRODUCTS[0];
 const score=n=>((3*n.f+2*n.x+2*n.t)/7);
 const allNiches=()=>SEED.concat(S.extra).slice().sort((a,b)=>score(b)-score(a));
 
+const MENU=[['dash','📊','Dashboard'],['busca','🔎','Buscar leads'],['funil','📋','Funil'],['clientes','👥','Clientes'],['nichos','🎯','Nichos'],['produtos','📦','Produtos'],['dados','💾','Dados']];
+function go(t){ui.tab=t;ui.menu=false;window.scrollTo(0,0);render();}
+function toggleMenu(){ui.menu=!ui.menu;renderMenu();}
+function actTab(){return ui.tab==='cliente'?(ui.prevTab||'clientes'):ui.tab;}
+function renderMenu(){
+  const act=actTab(),cnt={funil:S.leads.length,clientes:S.leads.length};
+  $('#panel').classList.toggle('on',!!ui.menu);$('#scrim').classList.toggle('on',!!ui.menu);
+  $('#panel').innerHTML='<div style="font-weight:700;margin:4px 8px 12px">📡 Radar de Prospecção</div>'+MENU.map(m=>`<button class="mi ${act===m[0]?'on':''}" onclick="go('${m[0]}')"><span>${m[1]}</span>${m[2]}${cnt[m[0]]?`<small>${cnt[m[0]]}</small>`:''}</button>`).join('');
+}
 function render(){
-  const tabs=[['nichos','🎯 Nichos'],['funil','📋 Funil'],['produtos','📦 Produtos'],['dados','💾 Dados']];
-  $('#nav').innerHTML=tabs.map(t=>`<button class="${ui.tab===t[0]?'on':''}" onclick="ui.tab='${t[0]}';render()">${t[1]}</button>`).join('');
-  $('#app').innerHTML={nichos:vNichos,funil:vFunil,produtos:vProdutos,dados:vDados}[ui.tab]();
+  renderMenu();
+  const cur=ui.tab==='cliente'?['👤','Cliente']:MENU.find(m=>m[0]===ui.tab)||MENU[0];
+  $('#ttl').textContent=cur[2]||cur[1];
+  const views={dash:vDash,busca:vBusca,funil:vFunil,clientes:vClientes,cliente:vCliente,nichos:vNichos,produtos:vProdutos,dados:vDados};
+  $('#app').innerHTML=(views[ui.tab]||vDash)();
 }
 
 function bfDate(y){const d=new Date(y,10,1);const first=(4-d.getDay()+7)%7;return new Date(y,10,1+first+21+1);}
@@ -117,7 +140,7 @@ function camps(){
 const AREAS=['Praia Grande','Boqueirão, Praia Grande','Guilhermina, Praia Grande','Ocian, Praia Grande','Tupi, Praia Grande','Vila Mirim, Praia Grande','Aviação, Praia Grande','Santos','São Vicente','Guarujá','Cubatão','Mongaguá','Itanhaém'];
 function updFree(){const v=document.getElementById('qfree').value.trim();document.getElementById('qa').href=v?'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(v+' '+S.city):'#';}
 function waLink(l,t){const d=(l.tel||'').replace(/\D/g,'');if(!d)return '';const num=d.length<=11?'55'+d:d;return 'https://wa.me/'+num+'?text='+encodeURIComponent(t);}
-function markSent(id){const l=S.leads.find(x=>x.id===id);if(l&&l.stage===0){l.stage=1;save();setTimeout(render,600);}}
+function markSent(id){const l=S.leads.find(x=>x.id===id);if(l&&l.stage===0){l.stage=1;l.at=Date.now();save();setTimeout(render,600);}}
 const IMP_DEMO='';
 function importLeads(){
   const nn=document.getElementById('imp_n').value,n=allNiches().find(x=>x.n===nn)||{n:nn,p:'mkt'};
@@ -224,7 +247,7 @@ function jaNoFunil(r){const dg=(r.telefone||'').replace(/\D/g,'');return S.leads
 function addRes(i,sent){
   const r=ui.bmRes[i];if(!r)return;let l=jaNoFunil(r);
   if(!l){l=leadFromRes(r);S.leads.push(l);}
-  if(sent&&l.stage===0)l.stage=1;
+  if(sent&&l.stage===0){l.stage=1;l.at=Date.now();}
   save();setTimeout(render,500);
 }
 function resWa(i){const r=ui.bmRes[i],l=jaNoFunil(r)||leadFromRes(r);return waLink(l,templates(l).m1);}
@@ -236,14 +259,14 @@ function resCard(r,i){
   return `<div class="card">
    <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><b>${esc(r.nome)}</b><span class="tag" style="color:${cor}">oportunidade ${esc(d.oportunidade||'')}</span></div>
    <div class="muted">${esc(r.endereco)}</div>
-   <div style="margin:6px 0">${canal}<span class="tag">⭐ ${r.nota||'-'} (${r.avaliacoes})</span>${r.fotos!=null?`<span class="tag">📸 ${r.fotos} fotos</span>`:''}${r.telefone?`<span class="tag">${esc(r.telefone)}</span>`:''}</div>
+   <div style="margin:6px 0">${canal}<span class="tag">⭐ ${r.nota||'-'} (${r.avaliacoes})</span><span class="tag">📸 ${r.fotos} fotos</span>${r.telefone?`<span class="tag">${esc(r.telefone)}</span>`:''}</div>
    ${(d.problemas||[]).length?`<div class="muted"><b>O que melhorar:</b> ${d.problemas.map(p=>esc(p.texto)).join(' · ')}</div>`:'<div class="muted">Perfil bem completo.</div>'}
    <div class="row" style="margin-top:8px">
     ${r.canal==='whatsapp'?`<a class="btn sm pri" target="_blank" rel="noopener" href="${resWa(i)}" onclick="addRes(${i},true)">📲 1ª msg</a>`:''}
     ${r.instagram?`<a class="btn sm" target="_blank" rel="noopener" href="${esc(r.instagram)}">📷 Instagram</a>`:''}
     ${r.canal==='nenhum'||r.canal==='agregador'?`<a class="btn sm" target="_blank" rel="noopener" href="https://www.google.com/search?q=${g}">🔎 achar Instagram</a>`:''}
     ${r.mapsUrl?`<a class="btn sm" target="_blank" rel="noopener" href="${esc(r.mapsUrl)}">🗺️ Maps</a>`:''}
-    <button class="btn sm" ${no?'disabled':''} onclick="addRes(${i},false)">${no?'✓ no funil':'＋ Funil'}</button>
+    ${no?`<button class="btn sm pri" onclick="openApproach('${no.id}')">💬 Abrir cliente</button>`:`<button class="btn sm" onclick="addRes(${i},false)">＋ Funil</button>`}
    </div></div>`;
 }
 function vBuscaMaps(){
@@ -254,11 +277,11 @@ function vBuscaMaps(){
     ${ui.err?`<div class="note" style="margin-top:8px">${esc(ui.err)}</div>`:''}</div>`;
   const ns=allNiches(),cur=ui.bmN||'Confeitarias e docerias';
   return `<div class="card" style="border-color:#0f766e"><b>🔎 Buscar leads no Maps</b>
-    <div class="muted" style="margin:4px 0">Cidade/bairro: <b>${esc(S.city)}</b> (troque na aba Nichos)</div>
+    <div class="muted" style="margin:4px 0">Cidade/bairro: <b>${esc(S.city)}</b></div>
     <select id="bm_n">${ns.map(n=>`<option ${n.n===cur?'selected':''}>${esc(n.n)}</option>`).join('')}</select>
     <div class="row" style="flex-wrap:nowrap;margin-top:6px"><input id="bm_t" placeholder="ex.: doceria, bolo no pote" value="${esc(ui.bmT||'doceria')}"><button class="btn pri" ${ui.bmBusy?'disabled':''} onclick="buscarMaps(false)" style="white-space:nowrap">${ui.bmBusy?'Buscando…':'Buscar'}</button></div>
     ${ui.err?`<div class="note" style="margin-top:8px">${esc(ui.err)}</div>`:''}
-    <div class="muted" style="margin-top:6px"><a href="#" onclick="clearTok();return false" style="color:#8b949e">trocar senha</a></div></div>
+   <div class="muted" style="margin-top:6px"><a href="#" onclick="clearTok();return false" style="color:#8b949e">trocar senha</a></div></div>
     ${(ui.bmRes||[]).map(resCard).join('')}
     ${ui.bmNext?`<div class="row" style="margin-bottom:12px"><button class="btn" ${ui.bmBusy?'disabled':''} onclick="buscarMaps(true)">Ver mais resultados</button></div>`:''}`;
 }
@@ -273,17 +296,9 @@ function vFunil(){
     <div class="stat"><b>${fech}</b>fechados</div>
   </div>
   <div class="row" style="margin-bottom:12px"><button class="btn pri" onclick="newLead(-1)">+ Novo lead</button></div>
-  ${vBuscaMaps()}
-  ${ui.impMsg?`<div class="note">${esc(ui.impMsg)}</div>`:''}
-  <details class="card" ${S.leads.length?'':'open'}><summary><b>📥 Importar lista de leads</b></summary>
-    <div class="muted" style="margin:6px 0">Uma por linha: Nome;WhatsApp;Observação.</div>
-    <select id="imp_n">${allNiches().map(n=>`<option ${n.n==='Confeitarias e docerias'?'selected':''}>${esc(n.n)}</option>`).join('')}</select>
-    <textarea id="imp_t" style="min-height:150px;margin-top:6px">${esc(IMP_DEMO)}</textarea>
-    <div class="row" style="margin-top:8px"><button class="btn pri" onclick="importLeads()">Importar</button></div>
-  </details>
   <div class="board">${STAGES.map((s,si)=>{const ls=L.filter(l=>l.stage===si);return `
     <div class="col"><h3><span>${s}</span><span>${ls.length}</span></h3>
-    ${ls.map(l=>`<div class="lead"><b>${esc(l.nome)}</b>
+    ${ls.map(l=>`<div class="lead"><b class="click" style="cursor:pointer" onclick="openApproach('${l.id}')">${esc(l.nome)}</b>
       <span class="tag p">${esc(prod(l.prod).nome)}</span><span class="tag">${esc(l.nicho||'')}</span>
       ${l.tel?`<div class="muted">${esc(l.tel)}</div>`:''}${l.nota?`<div class="muted">${esc(l.nota)}</div>`:''}
       <div class="row">
@@ -296,7 +311,22 @@ function vFunil(){
     </div>`}).join('')}</div>`;
 }
 
-function mv(id,d){const l=S.leads.find(x=>x.id===id);if(!l)return;l.stage=Math.min(STAGES.length-1,Math.max(0,l.stage+d));save();render();}
+function vBusca(){
+  return `<label>Onde buscar (toque para trocar, ou digite qualquer bairro/cidade)</label>
+  <div class="chips">${AREAS.map(a=>`<button class="chip ${S.city===a?'on':''}" onclick="S.city='${a}';save();render()">${a}</button>`).join('')}</div>
+  <input value="${esc(S.city)}" onchange="S.city=this.value;save();render()" style="margin-bottom:12px">
+  ${vBuscaMaps()}
+  ${ui.impMsg?`<div class="note">${esc(ui.impMsg)}</div>`:''}
+  <details class="card" ${S.leads.length?'':'open'}><summary><b>📥 Importar lista de leads</b></summary>
+    <div class="muted" style="margin:6px 0">Uma por linha: Nome;WhatsApp;Observação.</div>
+    <select id="imp_n">${allNiches().map(n=>`<option ${n.n==='Confeitarias e docerias'?'selected':''}>${esc(n.n)}</option>`).join('')}</select>
+    <textarea id="imp_t" style="min-height:150px;margin-top:6px">${esc(IMP_DEMO)}</textarea>
+    <div class="row" style="margin-top:8px"><button class="btn pri" onclick="importLeads()">Importar</button></div>
+  </details>
+`;
+}
+
+function mv(id,d){const l=S.leads.find(x=>x.id===id);if(!l)return;l.stage=Math.min(STAGES.length-1,Math.max(0,l.stage+d));l.at=Date.now();save();render();}
 
 function newLead(idx){
   const n=idx>=0?allNiches()[idx]:null;
@@ -360,25 +390,112 @@ function templates(l){
     obj:`Se disser "está caro": "Entendo. Para comparar, ${p.preco}. Por isso começo pela opção de menor compromisso para você testar e ver o retorno antes de decidir."`
   };
 }
-function openApproach(id){
-  const l=S.leads.find(x=>x.id===id);ui.approach={lead:l,m:templates(l),busy:false,ai:false};drawApproach();
+function isMobile(l){let d=(l.tel||'').replace(/\D/g,'');if(d.startsWith('55')&&d.length>=12)d=d.slice(2);return d.length===11&&d[2]==='9';}
+function extras(l){
+  const p=prod(l.prod),nome=l.nome,vid=(S.videos||{})[l.nicho]||'',ck=campKey(l),bf=ck==='bf';
+  let prop;
+  if(l.prod==='mkt'){
+    const preco=bf?'R$79 (preço de Black Friday; o normal é R$149,90)':'R$149,90';
+    prop=`Proposta para a ${nome}:\n• 1 vídeo de anúncio com avatar de IA, no estilo do exemplo\n• Valor: ${preco}, sem mensalidade\n• Refaço sem cobrar de novo até você aprovar\n\nPosso seguir assim?`;
+  }else prop=`Proposta para a ${nome}: ${p.nome}. ${p.preco}. Começo pela opção de menor compromisso para você testar e ver o retorno. Posso seguir assim?`;
+  return {vid:vid?`Oi! Separei um exemplo de vídeo que fiz para um negócio parecido com o da ${nome}:\n${vid}\n\nO da ${nome} ficaria nesse estilo, com a sua marca e os seus produtos. O que achou?`:'',prop};
 }
-function drawApproach(){
-  const a=ui.approach,l=a.lead,m=a.m;
-  const digits=(l.tel||'').replace(/\D/g,'');const num=digits&&digits.length<=11?'55'+digits:digits;
-  const wa=t=>num?`https://wa.me/${num}?text=${encodeURIComponent(t)}`:'';
-  const blocks=[['m1','1ª mensagem — pergunta da dor'],['m2','2ª mensagem — só depois que ele confirmar a dor'],['m3','Follow-up (sem resposta em 2 dias)'],['obj','Se vier objeção']];
-  openModal(`<h2>Abordagem · ${esc(l.nome)}</h2>
-  <div class="muted">${esc(prod(l.prod).nome)} · ${esc(l.nicho||'')} ${a.ai?'· ✨ gerada por IA':'· modelo base'}</div>
-  ${sample?`<div class="row" style="margin-top:8px"><button class="btn pri sm" ${a.busy?'disabled':''} onclick="genApproach()">${a.busy?'Gerando…':'✨ Personalizar com IA'}</button></div>`:''}
-  ${l.prod==='mkt'&&!(S.videos||{})[l.nicho]?'<div class="note" style="margin-top:10px">Este nicho ainda não tem vídeo-demo cadastrado. Cole o link na aba Nichos para ele entrar na 2ª mensagem.</div>':''}
-  ${blocks.map(([k,t])=>`<div class="msg"><div class="t">${t}</div>
-    <textarea id="m_${k}" onchange="ui.approach.m.${k}=this.value">${esc(m[k])}</textarea>
-    <div class="row" style="margin-top:5px">
-      <button class="btn sm" onclick="cp('m_${k}',this)">Copiar</button>
-      ${k!=='obj'&&wa(m[k])?`<a class="btn sm" target="_blank" rel="noopener" href="${wa(m[k])}">Abrir no WhatsApp</a>`:''}
-    </div></div>`).join('')}
-  <div class="row" style="margin-top:14px"><button class="btn" onclick="closeModal()">Fechar</button></div>`);
+function openApproach(id){
+  const l=S.leads.find(x=>x.id===id);if(!l)return;
+  if(ui.tab!=='cliente')ui.prevTab=ui.tab;
+  ui.approach={lead:l,m:Object.assign(templates(l),extras(l)),busy:false,ai:false};
+  ui.cid=id;ui.tab='cliente';ui.menu=false;window.scrollTo(0,0);render();
+}
+function drawApproach(){render();}
+const LBL={m1:'1ª mensagem',vid:'Vídeo de exemplo',m2:'2ª mensagem',m3:'Follow-up',prop:'Proposta',obj:'Objeção'};
+function sentMsg(id,label){
+  const l=S.leads.find(x=>x.id===id);if(!l)return;
+  if(l.stage===0){l.stage=1;l.at=Date.now();}
+  l.hist=l.hist||[];l.hist.push({t:Date.now(),a:label});save();setTimeout(render,700);
+}
+function sendWa(id,k){
+  const l=S.leads.find(x=>x.id===id),t=document.getElementById('m_'+k);if(!l||!t)return;
+  const u=waLink(l,t.value);if(!u)return;
+  window.open(u,'_blank','noopener');sentMsg(id,LBL[k]||k);
+}
+function setStageC(id,i){const l=S.leads.find(x=>x.id===id);if(!l)return;l.stage=i;l.at=Date.now();save();render();}
+function setNota(id,v){const l=S.leads.find(x=>x.id===id);if(l){l.nota=v;save();}}
+function setVidN(n,v){
+  S.videos=S.videos||{};S.videos[n]=v.trim();save();
+  const a=ui.approach;if(a)a.m=Object.assign(a.m,templates(a.lead),extras(a.lead));render();
+}
+function vCliente(){
+  const a=ui.approach,l=a&&S.leads.find(x=>x.id===ui.cid);
+  if(!l)return `<div class="note">Cliente não encontrado.</div><button class="btn" onclick="go('clientes')">Voltar</button>`;
+  const m=a.m,p=prod(l.prod),temTel=!!waLink(l,'x'),mob=isMobile(l),vid=(S.videos||{})[l.nicho]||'';
+  const cid=l.cidade||S.city;
+  const mapsQ='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(l.nome+' '+cid)+(l.placeId?'&query_place_id='+encodeURIComponent(l.placeId):'');
+  const ig=l.ig||('https://www.google.com/search?q='+encodeURIComponent(l.nome+' '+cid+' instagram'));
+  const blocks=[['m1','1ª mensagem','pergunta da dor, sem vender'],['vid','🎬 Vídeo de exemplo','manda o vídeo-demo do nicho'],['m2','2ª mensagem','só depois que ele confirmar a dor'],['m3','Follow-up','sem resposta em 2 dias'],['prop','Proposta','quando ele pedir o valor'],['obj','Se vier objeção','resposta pronta']];
+  const bl=blocks.map(([k,t,sub])=>{
+    const txt=m[k]||'';
+    if(k==='vid'&&!vid)return `<div class="card"><div class="row" style="justify-content:space-between"><b>${t}</b><span class="muted">${sub}</span></div>
+      <div class="note" style="margin-top:8px">Este nicho ainda não tem vídeo-demo. Cole o link do vídeo abaixo e ele entra nas mensagens.</div>
+      <div class="row" style="flex-wrap:nowrap"><input id="vl" placeholder="https://..."><button class="btn pri" onclick="setVidN(ui.approach.lead.nicho,document.getElementById('vl').value)">Salvar</button></div></div>`;
+    return `<div class="card"><div class="row" style="justify-content:space-between"><b>${t}</b><span class="muted">${sub}</span></div>
+      <textarea id="m_${k}" style="margin-top:8px;min-height:110px" onchange="ui.approach.m.${k}=this.value">${esc(txt)}</textarea>
+      <div class="row" style="margin-top:6px">
+        <button class="btn sm" onclick="cp('m_${k}',this)">Copiar</button>
+        ${k!=='obj'&&temTel?`<button class="btn sm pri" onclick="sendWa('${l.id}','${k}')">📲 Enviar no WhatsApp</button>`:''}
+        ${k==='vid'&&vid?`<a class="btn sm" target="_blank" rel="noopener" href="${esc(vid)}">▶ Ver vídeo</a>`:''}
+      </div></div>`;
+  }).join('');
+  const hist=(l.hist||[]).slice(-6).reverse().map(h=>`<div class="muted">${new Date(h.t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})} · ${esc(h.a)}</div>`).join('');
+  return `<div class="row" style="margin-bottom:10px">
+    <button class="btn" onclick="go('${ui.prevTab||'clientes'}')">← Voltar</button>
+    <button class="btn" onclick="editLead('${l.id}')">✏️ Editar</button>
+    ${sample?`<button class="btn pri" ${a.busy?'disabled':''} onclick="genApproach()">${a.busy?'Gerando…':'✨ Personalizar com IA'}</button>`:''}
+  </div>
+  <div class="card" style="border-color:#0f766e">
+    <h2 style="font-size:18px">${esc(l.nome)}</h2>
+    <div style="margin:6px 0"><span class="tag p">${esc(p.nome)}</span><span class="tag">${esc(l.nicho||'')}</span><span class="tag">${esc(cid)}</span></div>
+    <div class="muted">📞 ${esc(l.tel||'sem telefone')} ${l.tel&&!mob?'<span style="color:#f59e0b">· fixo: confirme se tem WhatsApp</span>':''}</div>
+    <div class="row" style="margin-top:8px">
+      <a class="btn sm" target="_blank" rel="noopener" href="${mapsQ}">🗺️ Maps</a>
+      <a class="btn sm" target="_blank" rel="noopener" href="${esc(ig)}">📷 ${l.ig?'Instagram':'achar Instagram'}</a>
+    </div>
+  </div>
+  <div class="card"><b>Etapa do funil</b><div class="chips" style="margin-top:6px">${STAGES.map((st,i)=>`<button class="chip ${l.stage===i?'on':''}" onclick="setStageC('${l.id}',${i})">${st}</button>`).join('')}</div></div>
+  <div class="card"><b>Diagnóstico e observações</b><textarea style="margin-top:6px" onchange="setNota('${l.id}',this.value)">${esc(l.nota||'')}</textarea></div>
+  ${a.ai?'<div class="muted" style="margin-bottom:8px">✨ mensagens personalizadas por IA</div>':''}
+  ${l.prod==='mkt'&&camps().bf.dias>=0&&campKey(l)==='bf'?'<div class="muted" style="margin-bottom:8px">Black Friday ativa: o vídeo avulso entra a R$79.</div>':''}
+  ${bl}
+  ${hist?`<div class="card"><b>Histórico</b><div style="margin-top:6px">${hist}</div></div>`:''}`;
+}
+function listaClientes(){
+  const q=(ui.q||'').toLowerCase(),sf=ui.sf==null?-1:ui.sf;
+  const ls=S.leads.filter(l=>(sf<0||l.stage===sf)&&(!q||((l.nome||'')+' '+(l.nicho||'')+' '+(l.tel||'')).toLowerCase().includes(q)));
+  return ls.map(l=>`<div class="card" style="cursor:pointer" onclick="openApproach('${l.id}')"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><b>${esc(l.nome)}</b><span class="tag p">${STAGES[l.stage]}</span></div><div class="muted">${esc(l.nicho||'')} · ${esc(l.tel||'sem telefone')}</div></div>`).join('')||'<div class="muted" style="margin-top:8px">Nenhum cliente por aqui. Use Buscar leads ou + Novo lead.</div>';
+}
+function vClientes(){
+  return `<div class="row" style="margin-bottom:10px"><button class="btn pri" onclick="newLead(-1)">+ Novo lead</button></div>
+  <input placeholder="Buscar por nome, nicho ou telefone" value="${esc(ui.q||'')}" oninput="ui.q=this.value;document.getElementById('cl_list').innerHTML=listaClientes()">
+  <div class="chips" style="margin-top:8px"><button class="chip ${(ui.sf==null||ui.sf<0)?'on':''}" onclick="ui.sf=-1;render()">Todos</button>${STAGES.map((st,i)=>`<button class="chip ${ui.sf===i?'on':''}" onclick="ui.sf=${i};render()">${st}</button>`).join('')}</div>
+  <div id="cl_list">${listaClientes()}</div>`;
+}
+function vDash(){
+  const L=S.leads,cs=camps(),cl=c=>c.dias>0?`${c.dias} dias (${c.data})`:'é agora',hoje=Date.now(),DIA=864e5;
+  const n=f=>L.filter(f).length,abord=n(l=>l.stage>=1&&l.stage!==6);
+  const novos=L.filter(l=>l.stage===0&&waLink(l,'x')),fol=L.filter(l=>l.stage===1&&(!l.at||hoje-l.at>2*DIA)),quentes=L.filter(l=>l.stage>=2&&l.stage<=4);
+  const row=l=>`<div class="lead click" onclick="openApproach('${l.id}')" style="margin-top:8px"><b>${esc(l.nome)}</b><span class="tag">${esc(l.nicho||'')}</span><span class="tag p">${STAGES[l.stage]}</span></div>`;
+  const sec=(t,arr,vazio)=>`<div class="card"><b>${t}</b> <span class="muted">(${arr.length})</span>${arr.slice(0,6).map(row).join('')||`<div class="muted" style="margin-top:6px">${vazio}</div>`}${arr.length>6?`<div class="muted" style="margin-top:6px">+${arr.length-6} no funil</div>`:''}</div>`;
+  const meta=10,pct=Math.min(100,Math.round(abord/meta*100));
+  return `<div class="stats">
+    <div class="stat"><b>${L.length}</b>leads</div><div class="stat"><b>${abord}</b>abordados</div>
+    <div class="stat"><b>${n(l=>l.stage>=2&&l.stage!==6)}</b>responderam</div><div class="stat"><b>${n(l=>l.stage===4)}</b>propostas</div>
+    <div class="stat"><b>${n(l=>l.stage===5)}</b>fechados</div></div>
+  <div class="card" style="border-color:#0f766e"><b>🎯 Meta: 10 abordagens</b> <span class="muted">${abord}/${meta}</span>
+    <div class="bar"><i style="width:${pct}%"></i></div>
+    <div class="muted" style="margin-top:8px">Black Friday: ${cl(cs.bf)} · Natal: ${cl(cs.natal)}</div></div>
+  <div class="row" style="margin-bottom:12px"><button class="btn pri" onclick="go('busca')">🔎 Buscar leads</button><button class="btn" onclick="go('funil')">📋 Funil</button><button class="btn" onclick="go('clientes')">👥 Clientes</button></div>
+  ${sec('📲 Prontos para a 1ª mensagem',novos,'Nenhum lead novo com WhatsApp. Busque mais em Buscar leads.')}
+  ${sec('⏰ Follow-up (sem resposta há 2 dias)',fol,'Nenhum follow-up pendente.')}
+  ${sec('🔥 Conversas em andamento',quentes,'Ninguém respondeu ainda.')}`;
 }
 async function genApproach(){
   const a=ui.approach;if(!sample||a.busy)return;a.busy=true;drawApproach();
